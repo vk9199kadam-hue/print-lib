@@ -1,0 +1,122 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --blue-dark: 216 60% 10%;
+  --blue-primary: 224 100% 55%;
+  --blue-light: 226 100% 96%;
+  --green-dark: 150 60% 6%;
+  --green-primary: 152 78% 24%;
+  --green-light: 152 76% 95%;
+  --amber: 38 92% 50%;
+  --red: 0 86% 60%;
+  --white: 210 40% 98%;
+  --border-color: 214 32% 91%;
+
+  --background: 210 40% 98%;
+  --foreground: 216 60% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 216 60% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 216 60% 10%;
+  --primary: 224 100% 55%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 226 100% 96%;
+  --secondary-foreground: 216 60% 10%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+  --accent: 152 78% 24%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 86% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 224 100% 55%;
+  --radius: 0.75rem;
+
+  --sidebar-background: 150 60% 6%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-primary: 152 78% 24%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 150 20% 14%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-border: 150 20% 18%;
+  --sidebar-ring: 152 78% 24%;
+}
+
+.dark {
+  --background: 216 60% 10%;
+  --foreground: 210 40% 98%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'DM Sans', sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Syne', sans-serif;
+  }
+  .mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes draw {
+  from { stroke-dashoffset: 100; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes priceFlash {
+  0% { background-color: rgba(251, 191, 36, 0.3); }
+  100% { background-color: transparent; }
+}
+@keyframes bounceIn {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes confettiFall {
+  0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-fade-in-up { animation: fadeInUp 0.3s ease forwards; }
+.animate-slide-in-right { animation: slideInRight 0.4s ease forwards; }
+.animate-shake { animation: shake 0.5s ease; }
+.animate-pulse-glow { animation: pulseGlow 2s infinite; }
+.animate-draw { animation: draw 0.6s ease forwards; }
+.animate-bounce-in { animation: bounceIn 0.4s ease forwards; }
+.animate-price-flash { animation: priceFlash 0.3s ease; }
+.animate-float { animation: float 3s ease-in-out infinite; }
