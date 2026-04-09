@@ -1,48 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Upload, ClipboardList, Copy, Check, FolderEdit, AlertCircle } from 'lucide-react';
+import { LogOut, Upload, Copy, Check, AlertCircle, Hash, Printer } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { DB } from '../../utils/db';
-import { Order } from '../../types';
-import StatusBadge from '../../components/StatusBadge';
-
-function timeAgo(date: string) {
-  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-  if (seconds < 60) return 'Just now';
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-  return `${Math.floor(seconds / 86400)}d ago`;
-}
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
   const { currentUser, logout } = useAuth();
-  const [orders, setOrders] = useState<Order[]>([]);
   const [copied, setCopied] = useState(false);
   const [shopSettings, setShopSettings] = useState<{is_open: boolean; closing_message: string; standard_hours: string}>({
     is_open: true, closing_message: '', standard_hours: '10:00 AM to 8:00 PM'
   });
 
   useEffect(() => {
-    if (!currentUser) return;
-    const load = async () => {
-      if (document.visibilityState === 'visible') {
-        const data = await DB.getOrdersByStudentId(currentUser.id);
-        setOrders(data);
-
-        try {
-          const res = await fetch('/api/rpc', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'getShopSettings' }) });
-          const { data: settingsData } = await res.json();
-          if (settingsData) setShopSettings(settingsData);
-        } catch (e) {
-          console.error("Could not fetch shop settings", e);
-        }
+    const loadSettings = async () => {
+      try {
+        const res = await fetch('/api/rpc', { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ action: 'getShopSettings' }) 
+        });
+        const { data: settingsData } = await res.json();
+        if (settingsData) setShopSettings(settingsData);
+      } catch (e) {
+        console.error("Could not fetch shop settings", e);
       }
     };
-    load();
-    const interval = setInterval(load, 5000);
-    return () => clearInterval(interval);
-  }, [currentUser]);
+    loadSettings();
+  }, []);
 
   const handleCopy = () => {
     if (!currentUser) return;
@@ -52,13 +36,12 @@ export default function StudentDashboard() {
   };
 
   const handleLogout = () => { logout(); navigate('/'); };
-  const activeOrders = orders.filter(o => o.print_status !== 'completed');
 
   return (
     <div className="min-h-screen bg-secondary">
       {/* Header */}
       <header className="bg-card border-b border-input px-4 py-3 flex items-center justify-between sticky top-0 z-20">
-        <h1 className="font-syne font-bold text-xl text-foreground">Print<span className="text-blue-primary">Ease</span></h1>
+        <h1 className="font-syne font-bold text-xl text-foreground">Library <span className="text-blue-primary">Print</span></h1>
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground hidden sm:block">{currentUser?.name}</span>
           <div className="w-8 h-8 rounded-full bg-blue-primary flex items-center justify-center text-primary-foreground text-sm font-bold">
@@ -73,92 +56,75 @@ export default function StudentDashboard() {
       <div className="max-w-lg mx-auto p-4 space-y-6">
         {/* Welcome */}
         <div className="animate-fade-in-up">
-          <h2 className="font-syne font-bold text-2xl text-foreground">Welcome back, {currentUser?.name}! 👋</h2>
+          <h2 className="font-syne font-bold text-2xl text-foreground">Welcome, {currentUser?.name}! 👋</h2>
+          <p className="text-sm text-muted-foreground mt-1 text-blue-primary font-medium tracking-wide text-uppercase">RIT COLLEGE LIBRARY PORTAL</p>
+        </div>
+
+        {/* PRN ID Card */}
+        <div className="rounded-2xl p-6 text-primary-foreground animate-fade-in-up bg-black shadow-xl border border-white/10 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+             <Hash size={80} />
+          </div>
+          <p className="text-xs uppercase tracking-widest text-gray-400 mb-1 font-bold">Your Registered PRN</p>
+          <div className="flex items-center justify-between relative z-10">
+            <span className="font-mono text-3xl font-black tracking-tighter text-white">{currentUser?.student_print_id}</span>
+            <button onClick={handleCopy} className="p-3 rounded-xl bg-white/10 hover:bg-white/20 transition backdrop-blur-sm border border-white/10">
+              {copied ? <Check size={20} className="text-green-400" /> : <Copy size={20} />}
+            </button>
+          </div>
+          <div className="mt-4 flex items-center gap-2 text-[10px] bg-blue-600/20 w-fit px-2 py-1 rounded-md border border-blue-500/30 text-blue-300">
+             <AlertCircle size={10} /> Valid for Library Identity
+          </div>
         </div>
 
         {/* Shop Status Visual */}
         <div className="animate-fade-in-up">
           {!shopSettings.is_open ? (
-            <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-xl text-center shadow-sm">
+            <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-4 rounded-2xl text-center shadow-sm">
               <p className="font-bold flex items-center justify-center gap-2 text-sm">
-                <AlertCircle size={16} /> Shop is Currently Closed
+                <AlertCircle size={16} /> Library Printer is Currently Offline
               </p>
-              <p className="text-xs mt-1 opacity-90">{shopSettings.closing_message ? `Message: "${shopSettings.closing_message}"` : `Standard Timings: ${shopSettings.standard_hours}`}</p>
+              <p className="text-xs mt-1 opacity-90">{shopSettings.closing_message ? `Message: "${shopSettings.closing_message}"` : `Resumes at: ${shopSettings.standard_hours}`}</p>
             </div>
           ) : (
-            <div className="bg-green-500/10 border border-green-500/30 text-green-700 px-4 py-2.5 rounded-xl text-center text-xs font-bold flex items-center justify-center gap-2 shadow-sm">
-               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse border border-green-200"></span> Shop is Open - Accepting Orders
+            <div className="bg-green-500/10 border border-green-500/20 text-green-700 px-4 py-3 rounded-2xl text-center text-xs font-bold flex items-center justify-center gap-2 shadow-sm border-dashed">
+               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Active: Accepting Print Requests
             </div>
           )}
         </div>
 
-        {/* Print ID Card */}
-        <div className="rounded-2xl p-6 text-primary-foreground animate-fade-in-up" style={{ background: 'linear-gradient(135deg, #0A1628 0%, #1B4FFF 100%)' }}>
-          <p className="text-xs uppercase tracking-widest text-blue-200 mb-1">Your Print ID</p>
-          <div className="flex items-center justify-between">
-            <span className="font-mono text-2xl font-bold">{currentUser?.student_print_id}</span>
-            <button onClick={handleCopy} className="p-2 rounded-lg hover:bg-white/10 transition">
-              {copied ? <Check size={18} /> : <Copy size={18} />}
-            </button>
-          </div>
-          <p className="text-xs text-blue-200 mt-2">Show this at the shop counter</p>
-        </div>
-
-        {/* Actions */}
-        <div className={`grid grid-cols-1 ${import.meta.env.VITE_CAPSTONE_FEATURE_ENABLED !== "false" ? 'sm:grid-cols-2' : ''} gap-3 animate-fade-in-up`}>
-          <button onClick={() => navigate('/student/upload')} className="py-4 rounded-xl bg-blue-primary text-primary-foreground font-bold hover:opacity-90 transition flex flex-col items-center justify-center gap-2 shadow-lg shadow-blue-primary/20">
-            <Upload size={24} />
-            <span className="text-sm">Standard Print</span>
-            <span className="text-[10px] font-normal opacity-80 italic">Regular PDF/PPT/Word</span>
-          </button>
-          {import.meta.env.VITE_CAPSTONE_FEATURE_ENABLED !== "false" && (
-            <button onClick={() => navigate('/student/capstone')} className="py-4 rounded-xl bg-emerald-600 text-primary-foreground font-bold hover:opacity-90 transition flex flex-col items-center justify-center gap-2 shadow-lg shadow-emerald-600/20">
-              <FolderEdit size={24} />
-              <span className="text-sm">Capstone Project</span>
-              <span className="text-[10px] font-normal opacity-80 italic">Full Project Report</span>
-            </button>
-          )}
-          <button onClick={() => navigate('/student/history')} className={`${import.meta.env.VITE_CAPSTONE_FEATURE_ENABLED !== "false" ? 'sm:col-span-2' : ''} py-3 rounded-xl border-2 border-input bg-card text-foreground font-semibold hover:bg-secondary transition flex items-center justify-center gap-2`}>
-            <ClipboardList size={18} /> Order History & Tracking
+        {/* Main Action */}
+        <div className="animate-fade-in-up">
+          <button 
+            disabled={!shopSettings.is_open}
+            onClick={() => navigate('/student/upload')} 
+            className="w-full py-8 rounded-2xl bg-blue-primary text-primary-foreground font-black text-xl hover:opacity-95 transition flex flex-col items-center justify-center gap-4 shadow-2xl shadow-blue-primary/30 disabled:opacity-50 group border-b-4 border-blue-800 active:border-b-0 active:translate-y-1"
+          >
+            <div className="p-4 bg-white/10 rounded-full group-hover:scale-110 transition-transform">
+               <Upload size={32} />
+            </div>
+            <div className="text-center">
+              <span>UPLOAD & PRINT NOW</span>
+              <p className="text-xs font-normal opacity-70 mt-1 uppercase tracking-widest font-sans">PDF · PPT · WORD</p>
+            </div>
           </button>
         </div>
 
-        {/* Active Orders */}
-        <div>
-          <h3 className="font-syne font-semibold text-lg text-foreground mb-3">Your Orders</h3>
-          {activeOrders.length === 0 ? (
-            <div className="bg-card rounded-2xl p-8 text-center border border-input">
-              <svg width="64" height="64" viewBox="0 0 64 64" className="mx-auto mb-4 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <rect x="12" y="16" width="40" height="32" rx="4" />
-                <line x1="20" y1="28" x2="44" y2="28" /><line x1="20" y1="36" x2="36" y2="36" />
-              </svg>
-              <p className="text-muted-foreground font-medium">No orders yet</p>
-              <p className="text-sm text-muted-foreground mt-1">Upload your first file to get started</p>
-              <button onClick={() => navigate('/student/upload')} className="mt-4 px-6 py-2 rounded-xl bg-blue-primary text-primary-foreground font-semibold text-sm hover:opacity-90">
-                Upload Files →
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {activeOrders.map(order => (
-                <div key={order.order_id} className="bg-card rounded-xl p-4 border border-input hover:shadow-md transition animate-fade-in-up">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-mono font-bold text-sm text-foreground">{order.order_id}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">{timeAgo(order.created_at)}</span>
-                      <StatusBadge status={order.print_status} />
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">{order.files.length} file{order.files.length !== 1 ? 's' : ''} · ₹{order.total_amount}</span>
-                    <button onClick={() => navigate(`/student/track/${order.order_id}`)} className="text-sm text-blue-primary font-semibold hover:underline">
-                      Track Order →
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+        {/* Info Text */}
+        <div className="bg-white rounded-2xl p-5 border border-input shadow-sm space-y-3 animate-fade-in-up">
+           <div className="flex items-start gap-3">
+              <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+                 <Printer size={18} />
+              </div>
+              <div>
+                 <p className="text-sm font-bold text-foreground">Self-Service Printing</p>
+                 <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">Upload your documents above and pay online. Your prints will be ready at the librarian's desk.</p>
+              </div>
+           </div>
+        </div>
+
+        <div className="text-center pb-8 opacity-50">
+           <p className="text-[10px] font-bold uppercase tracking-widest">Powered by RIT Library Services</p>
         </div>
       </div>
     </div>

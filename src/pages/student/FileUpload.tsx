@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CloudUpload, X, Minus, Plus, AlertCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, CloudUpload, X, Minus, Plus, AlertCircle, Loader2, Printer, Info } from 'lucide-react';
 import { FileItem, ExtraServices } from '../../types';
 import { DB } from '../../utils/db';
 import { getFileType, isAllowedFile, getPageCount } from '../../utils/pageCounter';
@@ -13,7 +13,8 @@ export default function FileUpload() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadedFiles, setUploadedFiles] = useState<(FileItem & { size?: number })[]>([]);
-  const [extras, setExtras] = useState<ExtraServices>({ spiral_binding: false, stapling: false });
+  // Extra services removed as requested, keeping state empty for logic compatibility
+  const [extras] = useState<ExtraServices>({ spiral_binding: false, stapling: false });
   const [isDragging, setIsDragging] = useState(false);
   const [toast, setToast] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -49,13 +50,12 @@ export default function FileUpload() {
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
   const processFile = async (file: File) => {
-    if (!shopSettings.is_open) { showToast('Shop is currently closed. Come back later!'); return; }
-    if (!isAllowedFile(file.name)) { showToast('Unsupported file type: ' + file.name); return; }
-    if (file.size > 52428800) { showToast('File too large (max 50MB). Please split your document.'); return; }
+    if (!shopSettings.is_open) { showToast('Library Print is currently offline.'); return; }
+    if (!isAllowedFile(file.name)) { showToast('Unsupported: ' + file.name); return; }
+    if (file.size > 52428800) { showToast('File too large (max 50MB).'); return; }
     const key = generateStorageKey(file.name);
     try {
       const publicUrl = await uploadFileToCloud(file, key);
-      // Using local processing & smart content parsing for page counts (Fast & Free)
       const pageCount = await getPageCount(file);
       const fileType = getFileType(file.name);
       const ext = file.name.split('.').pop() || '';
@@ -81,8 +81,7 @@ export default function FileUpload() {
       setUploadedFiles(prev => [...prev, item]);
     } catch (error: unknown) {
       const err = error as Error;
-      console.error('Supabase Upload Error:', err);
-      showToast('Cloud Upload Failed: ' + (err.message || 'Check bucket permissions.'));
+      showToast('Upload Failed. Try again.');
     }
   };
 
@@ -101,7 +100,7 @@ export default function FileUpload() {
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    if (!shopSettings.is_open) { showToast('Shop is currently closed.'); return; }
+    if (!shopSettings.is_open) { showToast('Library Print is offline.'); return; }
     const files = Array.from(e.dataTransfer.files);
     if (files.length === 0) return;
     setIsUploading(true);
@@ -113,9 +112,8 @@ export default function FileUpload() {
 
   return (
     <div className="min-h-screen bg-secondary pb-32">
-      {/* Toast */}
       {toast && (
-        <div className="fixed top-4 right-4 z-50 bg-destructive text-destructive-foreground px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-slide-in-right">
+        <div className="fixed top-4 right-4 z-50 bg-black text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-slide-in-right border border-white/10">
           <AlertCircle size={16} /> {toast}
         </div>
       )}
@@ -123,24 +121,10 @@ export default function FileUpload() {
       {/* Header */}
       <header className="bg-card border-b border-input px-4 py-3 flex items-center justify-between sticky top-0 z-20">
         <button onClick={() => navigate('/student/dashboard')} className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
-          <ArrowLeft size={18} /> <span className="text-sm">Back</span>
+          <ArrowLeft size={18} /> <span className="text-sm font-bold">Back to Dashboard</span>
         </button>
-        <span className="text-sm text-muted-foreground">Step 1 of 3</span>
+        <span className="text-xs font-bold uppercase tracking-widest text-blue-primary">RIT LIBRARY</span>
       </header>
-
-      {/* Shop Status Banner */}
-      {!shopSettings.is_open ? (
-        <div className="bg-destructive text-destructive-foreground px-4 py-3 text-center">
-          <p className="font-bold flex items-center justify-center gap-2">
-            <AlertCircle size={18} /> Shop is Currently Closed
-          </p>
-          <p className="text-sm mt-1">{shopSettings.closing_message ? `Message: "${shopSettings.closing_message}"` : `Standard Timings: ${shopSettings.standard_hours}`}</p>
-        </div>
-      ) : (
-        <div className="bg-green-500 text-white px-4 py-2 text-center text-sm font-semibold flex items-center justify-center gap-2">
-           <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span> Shop is Open - Accepting Orders
-        </div>
-      )}
 
       <div className="max-w-lg mx-auto p-4 space-y-4">
         {/* Drop zone */}
@@ -149,18 +133,20 @@ export default function FileUpload() {
           onDragLeave={() => setIsDragging(false)}
           onDrop={handleDrop}
           onClick={() => { if (!isUploading) fileInputRef.current?.click(); }}
-          className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all ${isUploading ? 'cursor-not-allowed opacity-70 border-input' : isDragging ? 'border-blue-primary bg-blue-light cursor-pointer' : 'border-input hover:border-blue-primary/50 cursor-pointer'}`}
+          className={`border-2 border-dashed rounded-3xl p-10 text-center transition-all shadow-sm ${isUploading ? 'cursor-not-allowed opacity-70 border-input' : isDragging ? 'border-blue-primary bg-blue-light cursor-pointer scale-102' : 'border-input hover:border-blue-primary/50 cursor-pointer bg-white'}`}
         >
           {isUploading ? (
             <div className="flex flex-col items-center justify-center">
               <Loader2 className="animate-spin text-blue-primary mb-3" size={40} />
-              <p className="font-semibold text-foreground animate-pulse">Uploading files...</p>
+              <p className="font-bold text-foreground animate-pulse">Uploading Library Documents...</p>
             </div>
           ) : (
             <>
-              <CloudUpload size={40} className="mx-auto mb-3 text-muted-foreground" />
-              <p className="font-semibold text-foreground">Drop files here or click to browse</p>
-              <p className="text-xs text-muted-foreground mt-1">PDF, Word, PowerPoint, Images, TXT — Max 50MB each</p>
+              <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-primary">
+                 <CloudUpload size={32} />
+              </div>
+              <p className="font-black text-lg text-foreground">Select PDF or Document</p>
+              <p className="text-xs text-muted-foreground mt-1 px-4">Tap to browse or drop here. Our library printer supports PDF, Word, PowerPoint and Images.</p>
             </>
           )}
           <input
@@ -180,177 +166,180 @@ export default function FileUpload() {
           />
         </div>
 
-        {/* File cards */}
+        {/* File items */}
         {uploadedFiles.map(file => (
-          <div key={file.temp_id} className="bg-card rounded-2xl border border-input p-4 space-y-3 animate-fade-in-up">
-            {/* Header */}
-            <div className="flex items-center gap-3">
-              <FileTypeIcon type={file.file_type} />
+          <div key={file.temp_id} className="bg-white rounded-3xl border border-input p-6 space-y-5 animate-fade-in-up shadow-sm">
+            {/* Header info */}
+            <div className="flex items-center gap-4 border-b border-gray-100 pb-4">
+              <div className="p-3 bg-secondary rounded-2xl">
+                 <FileTypeIcon type={file.file_type} />
+              </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm text-foreground truncate">{file.file_name}</p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <p className="text-xs text-muted-foreground">
-                    {file.file_size_kb >= 1024 ? (file.file_size_kb / 1024).toFixed(1) + ' MB' : file.file_size_kb + ' KB'}
-                  </p>
-                  <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm uppercase tracking-wider">
-                    {file.page_count} {file.page_count === 1 ? 'Page' : 'Pages'}
-                  </span>
+                <p className="font-black text-sm text-foreground truncate uppercase tracking-tight">{file.file_name}</p>
+                <div className="flex items-center gap-3 mt-1">
+                   <span className="bg-blue-primary/10 text-blue-primary px-2 py-0.5 rounded text-[10px] font-black uppercase">
+                      {file.page_count} {file.page_count === 1 ? 'Page' : 'Pages'}
+                   </span>
+                   <span className="text-[10px] text-muted-foreground font-bold">
+                      {file.file_size_kb >= 1024 ? (file.file_size_kb / 1024).toFixed(1) + ' MB' : file.file_size_kb + ' KB'}
+                   </span>
                 </div>
               </div>
-              <button onClick={() => removeFile(file.temp_id)} className="text-muted-foreground hover:text-destructive p-1">
-                <X size={16} />
+              <button 
+                onClick={() => removeFile(file.temp_id)} 
+                className="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition"
+              >
+                <X size={18} />
               </button>
             </div>
 
-
-
-            {/* Print type */}
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Print Type</label>
-              <div className="flex gap-2">
-                {([['bw', `B&W (₹${pricing.bw_rate}/pg)`], ['color', `Color (₹${pricing.color_rate}/pg)`], ['mixed', 'Mixed']] as const).map(([val, label]) => (
-                  <button
-                    key={val}
-                    onClick={() => updateFile(file.temp_id, { print_type: val })}
-                    className={`flex-1 py-2 rounded-lg text-xs font-semibold transition border-2
-                      ${file.print_type === val ? 'bg-blue-primary text-primary-foreground border-blue-primary' : 'bg-background text-foreground border-input hover:border-blue-primary/50'}`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              {file.print_type === 'mixed' && (
-                <div className="mt-2">
-                  <input
-                    placeholder="Color page ranges, e.g. 1-5, 10, 12"
-                    value={file.color_page_ranges}
-                    onChange={e => updateFile(file.temp_id, { color_page_ranges: e.target.value })}
-                    className="w-full px-3 py-2 text-xs border border-input rounded-lg bg-background text-foreground"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">All other pages printed in B&W</p>
-                </div>
-              )}
-            </div>
-
-            {/* Copies & Sides */}
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Copies</label>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => updateFile(file.temp_id, { copies: Math.max(1, file.copies - 1) })} className="w-8 h-8 rounded-lg border border-input flex items-center justify-center hover:bg-secondary">
-                    <Minus size={14} />
-                  </button>
-                  <span className="w-8 text-center font-semibold text-foreground">{file.copies}</span>
-                  <button onClick={() => updateFile(file.temp_id, { copies: Math.min(50, file.copies + 1) })} className="w-8 h-8 rounded-lg border border-input flex items-center justify-center hover:bg-secondary">
-                    <Plus size={14} />
-                  </button>
-                </div>
-              </div>
-              <div className="flex-1">
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Sides</label>
-                <div className="flex gap-2">
-                  {(['single', 'double'] as const).map(s => (
+            {/* Print Settings Grid */}
+            <div className="grid grid-cols-1 gap-4">
+              {/* Print Type Selection */}
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">Print Type</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {([['bw', `B&W`], ['color', `Color`], ['mixed', 'Mixed']] as const).map(([val, label]) => (
                     <button
-                      key={s}
-                      onClick={() => updateFile(file.temp_id, { sides: s })}
-                      className={`flex-1 py-2 rounded-lg text-xs font-semibold transition border-2
-                        ${file.sides === s ? 'bg-blue-primary text-primary-foreground border-blue-primary' : 'bg-background text-foreground border-input'}`}
+                      key={val}
+                      onClick={() => updateFile(file.temp_id, { print_type: val })}
+                      className={`py-3 rounded-2xl text-[11px] font-black transition border-2 uppercase
+                        ${file.print_type === val ? 'bg-black text-white border-black' : 'bg-background text-foreground border-input hover:border-black/20'}`}
                     >
-                      {s === 'single' ? 'Single' : 'Double'}
+                      {label}
+                      <span className="block text-[8px] font-bold opacity-70 mt-0.5">
+                        {val === 'bw' ? `₹${pricing.bw_rate}/pg` : val === 'color' ? `₹${pricing.color_rate}/pg` : 'Custom'}
+                      </span>
                     </button>
                   ))}
                 </div>
+                {file.print_type === 'mixed' && (
+                  <div className="mt-3 animate-fade-in">
+                    <input
+                      placeholder="Color pages, e.g. 1, 3, 5-10"
+                      value={file.color_page_ranges}
+                      onChange={e => updateFile(file.temp_id, { color_page_ranges: e.target.value })}
+                      className="w-full px-4 py-3 text-xs border-2 border-input rounded-2xl bg-white focus:border-blue-primary outline-none transition font-bold"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Layout Helper */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">Sides</label>
+                  <div className="flex bg-secondary p-1 rounded-2xl border border-input">
+                    {(['single', 'double'] as const).map(s => (
+                      <button
+                        key={s}
+                        onClick={() => updateFile(file.temp_id, { sides: s })}
+                        className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase transition
+                          ${file.sides === s ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                   <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">Copies</label>
+                   <div className="flex bg-secondary p-1 rounded-2xl border border-input justify-between items-center">
+                      <button onClick={() => updateFile(file.temp_id, { copies: Math.max(1, file.copies - 1) })} className="w-8 h-8 rounded-xl bg-white flex items-center justify-center hover:bg-gray-100 shadow-sm transition">
+                        <Minus size={12} />
+                      </button>
+                      <span className="font-black text-xs text-foreground">{file.copies}</span>
+                      <button onClick={() => updateFile(file.temp_id, { copies: Math.min(50, file.copies + 1) })} className="w-8 h-8 rounded-xl bg-white flex items-center justify-center hover:bg-gray-100 shadow-sm transition">
+                        <Plus size={12} />
+                      </button>
+                   </div>
+                </div>
+              </div>
+
+              {/* Paper & Density */}
+              <div className="grid grid-cols-2 gap-4">
+                 <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">Paper Size</label>
+                    <div className="flex bg-secondary p-1 rounded-2xl border border-input">
+                      {(['A4', 'A3'] as const).map(p => (
+                        <button
+                          key={p}
+                          onClick={() => updateFile(file.temp_id, { paper_size: p })}
+                          className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase transition
+                            ${(file.paper_size || 'A4') === p ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+                 </div>
+                 <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">Density</label>
+                    <div className="flex bg-secondary p-1 rounded-2xl border border-input">
+                      {([1, 2, 4] as const).map(num => (
+                        <button
+                          key={num}
+                          onClick={() => updateFile(file.temp_id, { slidesPerPage: num })}
+                          className={`flex-1 py-2 rounded-xl text-[10px] font-black transition
+                            ${(file.slidesPerPage || 1) === num ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                        >
+                          {num}
+                        </button>
+                      ))}
+                    </div>
+                 </div>
               </div>
             </div>
 
-            {/* Paper Size */}
+            {/* Multi-page visual tip */}
+            {(file.slidesPerPage || 1) > 1 && (
+               <div className="bg-amber-50 p-3 rounded-2xl flex items-center gap-3 border border-amber-100">
+                  <Info size={16} className="text-amber-600" />
+                  <p className="text-[10px] font-bold text-amber-800">Saving paper: {file.slidesPerPage} pages will be printed on one side.</p>
+               </div>
+            )}
+
+            {/* Instruction field */}
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Paper Size</label>
-              <div className="flex gap-2">
-                {(['A4', 'A3'] as const).map(p => (
-                  <button
-                    key={p}
-                    onClick={() => updateFile(file.temp_id, { paper_size: p })}
-                    className={`flex-1 py-2 rounded-lg text-xs font-semibold transition border-2
-                      ${(file.paper_size || 'A4') === p ? 'bg-blue-primary text-primary-foreground border-blue-primary' : 'bg-background text-foreground border-input hover:border-blue-primary/50'}`}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Pages Per Sheet (Slides/Layout) */}
-            <div className="animate-fade-in">
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Pages per sheet</label>
-              <div className="grid grid-cols-3 gap-2">
-                {([1, 2, 4] as const).map(num => (
-                  <button
-                    key={num}
-                    onClick={() => updateFile(file.temp_id, { slidesPerPage: num })}
-                    className={`py-2 rounded-lg text-xs font-semibold transition border-2
-                      ${(file.slidesPerPage || 1) === num ? 'bg-amber-500 text-white border-amber-500' : 'bg-background text-foreground border-input hover:border-amber-500/30'}`}
-                  >
-                    {num}
-                  </button>
-                ))}
-              </div>
-              <p className="text-[10px] text-muted-foreground mt-1 italic">Save paper! Select how many pages/slides to print on one side.</p>
-            </div>
-
-            {/* Notes */}
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Instructions</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">Special Instructions</label>
               <textarea
                 rows={2}
                 maxLength={200}
-                placeholder="e.g. staple pages, print only pages 2-5..."
+                placeholder="Ex: Staple pages, print specific pages only..."
                 value={file.student_note}
                 onChange={e => updateFile(file.temp_id, { student_note: e.target.value })}
-                className="w-full px-3 py-2 text-xs border border-input rounded-lg bg-background text-foreground resize-none"
+                className="w-full px-5 py-4 text-xs border-2 border-secondary rounded-2xl bg-secondary focus:bg-white focus:border-blue-primary outline-none transition font-medium resize-none"
               />
-              <p className="text-xs text-muted-foreground text-right">{file.student_note.length}/200</p>
             </div>
           </div>
         ))}
-
-        {/* Extra Services */}
-        {uploadedFiles.length > 0 && (
-          <div className="bg-card rounded-2xl border border-input p-4">
-            <h3 className="font-semibold text-sm text-foreground mb-3">Extra Services</h3>
-            <div className="space-y-3">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" checked={extras.spiral_binding} onChange={e => setExtras(p => ({ ...p, spiral_binding: e.target.checked }))} className="w-4 h-4 rounded accent-blue-primary" />
-                <span className="text-sm text-foreground font-medium">Spiral Binding</span>
-                <span className="text-xs text-muted-foreground ml-auto">₹{pricing.spiral_binding_fee}</span>
-              </label>
-              <label className="flex items-center gap-3 cursor-pointer border-t border-input pt-3">
-                <input type="checkbox" checked={extras.stapling} onChange={e => setExtras(p => ({ ...p, stapling: e.target.checked }))} className="w-4 h-4 rounded accent-blue-primary" />
-                <span className="text-sm text-foreground font-medium">Stapling</span>
-                <span className="text-xs text-muted-foreground ml-auto">₹{pricing.stapling_fee}</span>
-              </label>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Sticky bottom bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-input p-4 shadow-lg z-30">
+      {/* Payment Summary Footer */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-input p-6 shadow-2xl z-40 rounded-t-[32px]">
         <div className="max-w-lg mx-auto">
           {!priceResult ? (
-            <p className="text-center text-sm text-muted-foreground">Add files to see price</p>
+            <div className="text-center">
+               <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Awaiting documents...</p>
+            </div>
           ) : (
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Grand Total</p>
-                <p className="font-syne font-bold text-xl text-blue-primary">₹{priceResult.total_amount}</p>
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Library Print Total</p>
+                  <p className="font-syne font-black text-3xl text-foreground">₹{priceResult.total_amount}</p>
+                </div>
+                <div className="text-right">
+                   <p className="text-[10px] font-bold text-blue-primary uppercase tracking-widest mb-1">Files: {uploadedFiles.length}</p>
+                   <p className="text-[10px] font-bold text-muted-foreground capitalize">Estimated Delivery: Immediate</p>
+                </div>
               </div>
               <button
                 onClick={() => navigate('/student/payment', { state: { files: uploadedFiles, extras } })}
                 disabled={!canProceed || !shopSettings.is_open}
-                className="px-6 py-3 rounded-xl bg-blue-primary text-primary-foreground font-semibold hover:opacity-90 transition disabled:opacity-40"
+                className="w-full py-5 rounded-2xl bg-blue-primary text-primary-foreground font-black text-lg hover:opacity-95 transition-all transform active:scale-95 disabled:opacity-40 shadow-xl shadow-blue-primary/20 flex items-center justify-center gap-2"
               >
-                Proceed to Payment →
+                PAY NOW WITH RAZORPAY →
               </button>
             </div>
           )}
