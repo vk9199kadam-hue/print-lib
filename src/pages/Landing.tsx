@@ -80,7 +80,7 @@ export default function Landing() {
           className="flex-1 flex flex-col items-center justify-center p-12 rounded-[40px] text-center shadow-2xl relative overflow-hidden group transition-transform hover:scale-[1.01]"
           style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)' }}
         >
-          <div className="absolute inset-0 opacity-10 group-hover:scale-110 transition-transform duration-700 bg-[radial-gradient(circle_at_center,_white_1px,_transparent_1px)] bg-[size:20px_20px]"></div>
+          <div className="absolute inset-0 opacity-10 group-hover:scale-110 transition-transform duration-700 bg-[radial-gradient(circle_at_center,_white_1px,_transparent_1px)] bg-[size:20px_20px] pointer-events-none"></div>
           
           <div className="mb-8 w-24 h-24 bg-white/10 rounded-[32px] backdrop-blur-xl flex items-center justify-center text-white border border-white/20 shadow-inner">
              <Printer size={48} />
@@ -89,7 +89,7 @@ export default function Landing() {
           <p className="text-blue-100 mb-10 font-bold text-sm opacity-80 uppercase tracking-widest">Login with Name & PRN</p>
           <button
             onClick={() => navigate('/student/login')}
-            className="w-full md:w-auto px-12 py-5 rounded-3xl font-black text-blue-900 bg-white hover:bg-blue-50 transition-all duration-300 shadow-xl shadow-blue-900/20 uppercase text-xs tracking-widest"
+            className="w-full md:w-auto px-12 py-5 rounded-3xl font-black text-blue-900 bg-white hover:bg-blue-50 transition-all duration-300 shadow-xl shadow-blue-900/20 uppercase text-xs tracking-widest relative z-10"
           >
             Start Printing →
           </button>
@@ -99,7 +99,7 @@ export default function Landing() {
         <div
           className="flex-1 flex flex-col items-center justify-center p-12 rounded-[40px] text-center shadow-2xl border-2 border-slate-900 bg-slate-950 relative overflow-hidden group transition-transform hover:scale-[1.01]"
         >
-          <div className="absolute inset-0 opacity-5 group-hover:opacity-10 transition-opacity bg-[image:linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px]"></div>
+          <div className="absolute inset-0 opacity-5 group-hover:opacity-10 transition-opacity bg-[image:linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none"></div>
 
           <div className="mb-8 w-24 h-24 bg-slate-900 rounded-[32px] flex items-center justify-center text-blue-500 border border-white/5 shadow-2xl">
              <UserCheck size={48} />
@@ -108,7 +108,7 @@ export default function Landing() {
           <p className="text-slate-500 mb-10 font-bold text-sm uppercase tracking-widest">Admin Dashboard Management</p>
           <button
             onClick={() => navigate('/librarian/login')}
-            className="w-full md:w-auto px-12 py-5 rounded-3xl font-black text-white bg-blue-600 hover:bg-blue-700 transition-all duration-300 shadow-xl shadow-blue-600/30 uppercase text-xs tracking-widest"
+            className="w-full md:w-auto px-12 py-5 rounded-3xl font-black text-white bg-blue-600 hover:bg-blue-700 transition-all duration-300 shadow-xl shadow-blue-600/30 uppercase text-xs tracking-widest relative z-10"
           >
             Open Dashboard →
           </button>
