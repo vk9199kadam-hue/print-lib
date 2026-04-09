@@ -95,28 +95,27 @@ export default function OrderConfirmed() {
           </div>
         )}
 
-        {/* Status */}
-        <div className="bg-green-light rounded-xl p-4 text-center border border-green-primary/20">
-          <p className="text-green-primary font-semibold">✓ Your order is in the print queue</p>
-          <p className="text-sm text-green-primary/70">The librarian has been notified</p>
-          {order.order_type === 'capstone' && (
-            <div className="mt-4 pt-4 border-t border-green-primary/20">
-              <p className="text-xs text-green-800 font-bold uppercase tracking-wider mb-1">Capstone Support</p>
-              <p className="text-lg font-mono font-bold text-green-primary truncate">
-                📞 {shopInfo?.contact_number || import.meta.env.VITE_CAPSTONE_SHOP_MOBILE || '9762626246'}
-              </p>
-              <p className="text-[10px] text-green-800/70 mt-1 italic">Contact librarian for project updates.</p>
-            </div>
-          )}
+        <div className="bg-blue-50 rounded-[32px] p-8 text-center border-2 border-blue-600 shadow-lg shadow-blue-500/10 animate-fade-in-up">
+          <p className="text-blue-600 font-black text-xs uppercase tracking-widest mb-2">Print Queue Status</p>
+          <p className="text-2xl font-black text-slate-900 leading-tight">Your order is now in the library print queue! 🖨️</p>
+          <p className="text-xs font-bold text-slate-500 mt-4 leading-relaxed">
+            Please visit the Librarian's desk with your **Order ID** or **PRN** to collect your prints.
+          </p>
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3">
-          <button onClick={() => navigate(`/student/track/${order.order_id}`)} className="flex-1 py-3 rounded-xl bg-blue-primary text-primary-foreground font-semibold hover:opacity-90 transition">
-            Track My Order →
+        <div className="flex flex-col gap-3">
+          <button 
+            onClick={() => navigate('/student/dashboard')} 
+            className="w-full py-4 rounded-3xl bg-black text-white font-black text-xs uppercase tracking-widest hover:opacity-90 transition shadow-xl"
+          >
+            ← Back to Library Portal
           </button>
-          <button onClick={() => navigate('/student/upload')} className="flex-1 py-3 rounded-xl border-2 border-input bg-card text-foreground font-semibold hover:bg-secondary transition">
-            Upload More
+          <button 
+            onClick={() => navigate('/student/upload')} 
+            className="w-full py-4 rounded-3xl border-2 border-slate-900 bg-white text-slate-900 font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition"
+          >
+            New Print Job
           </button>
         </div>
       </div>
