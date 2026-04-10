@@ -9,19 +9,24 @@ const supabaseAdmin = createClient(
   process.env.VITE_SUPABASE_ANON_KEY || ''
 );
 
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-  connectionTimeoutMillis: 10000, 
-  idleTimeoutMillis: 30000,
-  max: 5
-});
-
-pool.on('error', (err) => {
-  console.error('Unexpected error on idle client', err);
-});
-
+// Lazy pool initialization to prevent crashes if env is missing at startup
+let pool: Pool | null = null;
+const getPool = () => {
+  if (!pool) {
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL environment variable is MISSING');
+    }
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+      connectionTimeoutMillis: 10000, 
+      idleTimeoutMillis: 30000,
+      max: 5
+    });
+    pool.on('error', (err) => console.error('Unexpected pool error', err));
+  }
+  return pool;
+};
 
 interface RPCRequest {
   method: string;
@@ -41,16 +46,22 @@ export default async function handler(req: RPCRequest, res: RPCResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   
   const { action, payload } = req.body;
-  
   let client = null;
+
   try {
-    client = await pool.connect();
+    const activePool = getPool();
+    client = await activePool.connect();
 
     switch (action) {
       case 'health': {
         try {
           await client.query('SELECT 1');
-          return res.json({ status: 'ok', db_connected: true, timestamp: Date.now() });
+          return res.json({ 
+            status: 'ok', 
+            db_connected: true, 
+            env_url: !!process.env.VITE_SUPABASE_URL,
+            env_db: !!process.env.DATABASE_URL
+          });
         } catch (dbErr: unknown) {
           return res.status(500).json({ status: 'db_error', message: dbErr instanceof Error ? dbErr.message : String(dbErr) });
         }

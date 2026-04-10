@@ -8,7 +8,10 @@ async function rpc(action: string, payload: Record<string, unknown> = {}) {
   });
   console.log(`RPC [${action}]: Response received`);
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'API Error');
+  if (!res.ok) {
+    const errorBody = data.error || data.details || 'API Error';
+    throw new Error(errorBody);
+  }
   return data.data;
 }
 
@@ -40,7 +43,7 @@ export const ApiClient = {
   },
 
   async verifylibrarian(email: string, password: string): Promise<librarian | null> {
-    return await rpc('verifyShopkeeper', { email, password }).catch(() => null);
+    return await rpc('verifyShopkeeper', { email, password });
   },
 
   async getPaidOrders(): Promise<Order[]> {

@@ -40,7 +40,7 @@ export default function LibrarianLogin() {
         setTimeout(() => setShaking(false), 500);
       }
     } catch (err) {
-      setError('System error. Check database connection.');
+      setError(err instanceof Error ? err.message : 'System error. Check database connection.');
     } finally {
       setLoading(false);
     }
