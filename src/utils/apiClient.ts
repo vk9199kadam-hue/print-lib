@@ -40,7 +40,7 @@ export const ApiClient = {
   },
 
   async verifylibrarian(email: string, password: string): Promise<librarian | null> {
-    return await rpc('verifylibrarian', { email, password }).catch(() => null);
+    return await rpc('verifyShopkeeper', { email, password }).catch(() => null);
   },
 
   async getPaidOrders(): Promise<Order[]> {
