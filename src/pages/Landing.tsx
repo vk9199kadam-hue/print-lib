@@ -52,7 +52,7 @@ export default function Landing() {
               <Library size={28} />
            </div>
            <h1 className="font-syne font-black text-4xl md:text-5xl text-slate-900 tracking-tighter">
-             Library<span className="text-blue-600">Print</span>
+             PrintEase <span className="text-blue-600">Library</span>
            </h1>
         </div>
         <p className="mt-2 text-lg text-slate-500 font-bold uppercase tracking-widest text-xs relative z-10">
