@@ -111,6 +111,7 @@ export default function OrderDetail() {
 
   return (
     <div className="min-h-screen bg-secondary pb-12">
+      <header className="bg-white border-b border-input px-4 py-4 flex items-center justify-between sticky top-0 z-20 shadow-sm">
         <div className="flex items-center gap-4">
           <button 
             onClick={() => navigate('/librarian/dashboard')} 
