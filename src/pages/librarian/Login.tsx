@@ -29,7 +29,7 @@ export default function LibrarianLogin() {
 
     // Database credentials check
     try {
-      const user = await ApiClient.verifylibrarian(username, password);
+      const user = await ApiClient.verifylibrarian(username.trim(), password);
       
       if (user) {
         login(user as any, 'librarian');

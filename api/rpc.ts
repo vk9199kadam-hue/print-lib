@@ -12,7 +12,7 @@ const supabaseAdmin = createClient(
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL?.includes('cockroachlabs.cloud') ? { rejectUnauthorized: false } : false,
+  ssl: { rejectUnauthorized: false },
   connectionTimeoutMillis: 10000, 
   idleTimeoutMillis: 30000,
   max: 5
@@ -42,8 +42,9 @@ export default async function handler(req: RPCRequest, res: RPCResponse) {
   
   const { action, payload } = req.body;
   
-  const client = await pool.connect();
+  let client = null;
   try {
+    client = await pool.connect();
 
     switch (action) {
       case 'health': {
