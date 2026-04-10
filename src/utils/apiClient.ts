@@ -7,7 +7,15 @@ async function rpc(action: string, payload: Record<string, unknown> = {}) {
     body: JSON.stringify({ action, payload })
   });
   console.log(`RPC [${action}]: Response received`);
-  const data = await res.json();
+  const contentType = res.headers.get('content-type');
+  let data;
+  if (contentType && contentType.includes('application/json')) {
+    data = await res.json();
+  } else {
+    const text = await res.text();
+    throw new Error(`Server returned non-JSON response (${res.status}): ${text.substring(0, 100)}...`);
+  }
+
   if (!res.ok) {
     const errorBody = data.error || data.details || 'API Error';
     throw new Error(errorBody);
