@@ -4,10 +4,18 @@ import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseAdmin = createClient(
-  process.env.VITE_SUPABASE_URL || '',
-  process.env.VITE_SUPABASE_ANON_KEY || ''
-);
+let supabaseAdmin: any = null;
+const getSupabase = () => {
+  if (!supabaseAdmin) {
+    const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+    const key = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+    if (!url || !key) {
+      throw new Error('Supabase environment variables are MISSING (VITE_SUPABASE_URL/SUPABASE_URL)');
+    }
+    supabaseAdmin = createClient(url, key);
+  }
+  return supabaseAdmin;
+};
 
 // Lazy pool initialization to prevent crashes if env is missing at startup
 let pool: Pool | null = null;
@@ -380,7 +388,7 @@ export default async function handler(req: RPCRequest, res: RPCResponse) {
         return res.json({ data: true });
       }
       case 'downloadFile': {
-        const { data: publicUrlData } = supabaseAdmin.storage
+        const { data: publicUrlData } = getSupabase().storage
           .from('library_print_files')
           .getPublicUrl(payload.key);
         
@@ -390,7 +398,7 @@ export default async function handler(req: RPCRequest, res: RPCResponse) {
         return res.json({ data: true });
       }
       case 'cleanOrphanedFiles': {
-        const { data: files, error } = await supabaseAdmin.storage.from('library_print_files').list('', { limit: 10000 });
+        const { data: files, error } = await getSupabase().storage.from('library_print_files').list('', { limit: 10000 });
         if (error) return res.status(500).json({ error: error.message });
         
         const dbFiles = await client.query('SELECT file_storage_key FROM order_files');
@@ -415,7 +423,7 @@ export default async function handler(req: RPCRequest, res: RPCResponse) {
 
         if (orphans.length > 0) {
           for (let i = 0; i < orphans.length; i += 100) {
-            await supabaseAdmin.storage.from('library_print_files').remove(orphans.slice(i, i + 100));
+            await getSupabase().storage.from('library_print_files').remove(orphans.slice(i, i + 100));
           }
         }
         
