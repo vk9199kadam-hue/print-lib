@@ -53,10 +53,18 @@ interface RPCResponse {
 export default async function handler(req: RPCRequest, res: RPCResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   
+  if (!req.body) {
+    return res.status(400).json({ error: 'Missing request body' });
+  }
+
   const { action, payload } = req.body;
   let client = null;
 
   try {
+    if (action === 'ping_simple') {
+      return res.json({ status: 'ok', message: 'reached backend' });
+    }
+
     const activePool = getPool();
     client = await activePool.connect();
 
@@ -67,7 +75,7 @@ export default async function handler(req: RPCRequest, res: RPCResponse) {
           return res.json({ 
             status: 'ok', 
             db_connected: true, 
-            env_url: !!process.env.VITE_SUPABASE_URL,
+            env_url: !!(process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL),
             env_db: !!process.env.DATABASE_URL
           });
         } catch (dbErr: unknown) {
