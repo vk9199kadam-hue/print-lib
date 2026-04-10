@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, Lock, Eye, EyeOff, Loader2, Library } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { ApiClient } from '../../utils/apiClient';
 
 export default function LibrarianLogin() {
   const navigate = useNavigate();
@@ -28,7 +29,6 @@ export default function LibrarianLogin() {
 
     // Database credentials check
     try {
-      const { ApiClient } = await import('../../utils/apiClient');
       const user = await ApiClient.verifylibrarian(username, password);
       
       if (user) {
