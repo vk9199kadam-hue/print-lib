@@ -23,6 +23,8 @@ export default async function handler(req: any, res: any) {
   try {
     const db = getSupabase();
 
+    if (action === 'ping') return res.json({ status: 'ok', version: '1.2.3-SUPABASE-CLIENT', timestamp: '2026-04-11T01:10:00Z' });
+
     switch (action) {
       case 'health': {
         const { error } = await db.from('shopkeepers').select('count', { count: 'exact', head: true });
