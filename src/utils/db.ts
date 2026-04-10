@@ -1,5 +1,5 @@
 import { User, librarian, Order, Pricing, Session, Submission, Notice } from '../types';
-import { ApiClient } from './ApiClient';
+import { ApiClient } from './apiClient';
 
 const KEYS = {
   SESSION: 'Library Print_session',
