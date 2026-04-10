@@ -4,16 +4,7 @@ import { ArrowLeft, Save, LogOut, Printer, Zap, Inbox, BookOpen, BarChart3, Sett
 import { useAuth } from '../../context/AuthContext';
 import { DB } from '../../utils/db';
 
-async function rpc(action: string, payload: Record<string, unknown> = {}) {
-  const res = await fetch('/api/rpc', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, payload })
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'API Error');
-  return data.data;
-}
+
 
 export default function ShopSettings() {
   const navigate = useNavigate();
@@ -44,38 +35,30 @@ export default function ShopSettings() {
 
   useEffect(() => {
     const loadData = async () => {
-      // Load pricing from local DB (localStorage)
-      const currentPricing = DB.getPricing();
-      setPricing(currentPricing);
+      // Load pricing from DB
+      const currentPricing = await DB.getPricing();
+      if (currentPricing) setPricing(currentPricing);
 
-      if (currentShop?.email) {
-        try {
-          const profile = await rpc('getlibrarianProfile', { email: currentShop.email });
-          if (profile) {
-            setFormData({
-              name: profile.name || '',
-              library_name: profile.library_name || '',
-              email: profile.email || '',
-              upi_id: profile.upi_id || '',
-              contact_number: profile.contact_number || ''
-            });
-          }
-        } catch (e) {
-          console.error('Failed to load profile', e);
-        }
+      const settings = await DB.getShopSettings();
+      if (settings) {
+        setFormData({
+          name: 'Librarian', // Fallback or from session
+          library_name: settings.shop_name || 'RIT Library',
+          email: 'librarian@rit.edu',
+          upi_id: settings.upi_id || '',
+          contact_number: settings.contact_number || ''
+        });
       }
     };
     loadData();
-  }, [currentShop]);
+  }, []);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      // Save profile to server
-      await rpc('updatelibrarianProfile', formData);
-      
-      // Save pricing to server and local cache
+      // Save profile and pricing to DB
+      await DB.updateShopSettings(formData);
       await DB.savePricing(pricing);
 
       setShowToast(true);
@@ -88,11 +71,11 @@ export default function ShopSettings() {
   };
 
   const handleCleanStorage = async () => {
-    if (!window.confirm("Are you sure you want to clean up abandoned student files? This only deletes files that were abandoned before payment.")) return;
+    if (!window.confirm("Are you sure you want to clean up abandoned student files?")) return;
     setIsCleaning(true);
     try {
-      const res = await DB.cleanOrphanedFiles();
-      alert(`Storage Cleaned! Deleted ${res?.deleted || 0} abandoned files.`);
+       await DB.cleanOrphanedFiles();
+       alert('Storage Cleaned!');
     } catch (e) {
       alert('Failed to clean storage');
     } finally {
