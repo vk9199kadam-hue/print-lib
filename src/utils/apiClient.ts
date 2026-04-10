@@ -1,143 +1,110 @@
 import { User, librarian, Order, Pricing, Session, Submission, Notice } from '../types';
-
-async function rpc(action: string, payload: Record<string, unknown> = {}) {
-  const res = await fetch(`/api/auth?t=${Date.now()}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
-    body: JSON.stringify({ action, payload })
-  });
-  console.log(`RPC [${action}]: Response received`);
-  const contentType = res.headers.get('content-type');
-  let data;
-  if (contentType && contentType.includes('application/json')) {
-    data = await res.json();
-  } else {
-    const text = await res.text();
-    throw new Error(`Server returned non-JSON response (${res.status}): ${text.substring(0, 100)}...`);
-  }
-
-  if (!res.ok) {
-    const errorBody = data.error || data.details || 'API Error';
-    throw new Error(errorBody);
-  }
-  return data.data;
-}
+import { supabase } from './supabase';
+import bcrypt from 'bcryptjs';
 
 export const ApiClient = {
-  async getUsers(): Promise<User[]> {
-    return await rpc('getUsers').catch(() => []);
-  },
-  
-  async getUserById(id: string): Promise<User | null> {
-    return await rpc('getUserById', { id }).catch(() => null);
-  },
-
-  async getUserByEmail(email: string): Promise<User | null> {
-    return await rpc('getUserByEmail', { email }).catch(() => null);
+  // --- AUTH ---
+  async verifylibrarian(email: string, password: string): Promise<librarian | null> {
+    const { data: users, error } = await supabase.from('shopkeepers').select('*').eq('email', email);
+    if (error || !users || users.length === 0) return null;
+    
+    const user = users[0];
+    let isValid = false;
+    
+    // Check if password is plain text (migration) or hashed
+    if (user.password === password) {
+       isValid = true;
+       const newHash = await bcrypt.hash(password, 10);
+       await supabase.from('shopkeepers').update({ password: newHash }).eq('id', user.id);
+    } else {
+       isValid = await bcrypt.compare(password, user.password);
+    }
+    
+    if (!isValid) return null;
+    delete user.password;
+    return user;
   },
 
   async verifyStudent(email: string, password: string): Promise<User | null> {
-    return await rpc('verifyStudent', { email, password }).catch(() => null);
+    const { data: users, error } = await supabase.from('users').select('*').eq('email', email);
+    if (error || !users || users.length === 0) return null;
+    
+    const user = users[0];
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) return null;
+    
+    delete user.password;
+    return user;
   },
 
-  async createUser(data: { name: string; email: string; password?: string; gender: string }): Promise<User | null> {
-    const year = new Date().getFullYear();
-    const count = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return await rpc('createUser', {
+  // --- ORDERS ---
+  async createOrder(data: Partial<Order>): Promise<Order> {
+    const order_id = `ORD-${Date.now().toString().slice(-6)}`;
+    const { data: order, error } = await supabase.from('orders').insert({
       ...data,
-      student_print_id: `SID-${year}-${count}`,
-      is_verified: true
-    }).catch(e => { console.error(e); return null; });
-  },
-
-  async verifylibrarian(email: string, password: string): Promise<librarian | null> {
-    return await rpc('verifyShopkeeper', { email, password });
+      order_id,
+      payment_status: data.payment_status || 'paid',
+      print_status: data.print_status || 'queued'
+    }).select().single();
+    
+    if (error) throw error;
+    
+    if (data.files && data.files.length > 0) {
+      const filesWithOrderId = data.files.map(f => ({
+        ...f,
+        order_id: order.id,
+        paper_size: f.paper_size || 'A4'
+      }));
+      const { error: fErr } = await supabase.from('order_files').insert(filesWithOrderId);
+      if (fErr) throw fErr;
+    }
+    
+    return order;
   },
 
   async getPaidOrders(): Promise<Order[]> {
-    return await rpc('getPaidOrders').catch(() => []);
-  },
-
-  async getOrdersByStudentId(student_id: string): Promise<Order[]> {
-    return await rpc('getOrdersByStudentId', { student_id }).catch(() => []);
-  },
-
-  async createOrder(data: Record<string, unknown>): Promise<Order | null> {
-    if (!data.order_id) {
-      const year = new Date().getFullYear();
-      const count = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-      data.order_id = `ORD-${year}-${count}`;
-    }
-    return await rpc('createOrder', data).catch(e => { console.error(e); return null; });
+    const { data, error } = await supabase.from('orders').select('*, order_files(*)').eq('payment_status', 'paid').order('created_at', { ascending: false });
+    if (error) throw error;
+    return data.map(o => ({ ...o, files: o.order_files }));
   },
 
   async updateOrderStatus(order_id: string, print_status: string): Promise<boolean> {
-    return await rpc('updateOrderStatus', { order_id, print_status }).catch(() => false);
+    const { error } = await supabase.from('orders').update({ print_status }).eq('order_id', order_id);
+    return !error;
   },
 
+  // --- SHOP SETTINGS ---
+  async getShopSettings(): Promise<any> {
+    const { data, error } = await supabase.from('shop_settings').select('*').eq('id', 1).single();
+    if (error || !data) return { is_open: true };
+    return data;
+  },
+
+  async updateShopSettings(data: any): Promise<boolean> {
+    const { error } = await supabase.from('shop_settings').update(data).eq('id', 1);
+    return !error;
+  },
+
+  // --- SUBMISSIONS ---
   async getSubmissions(): Promise<Submission[]> {
-    return await rpc('getSubmissions').catch(() => []);
+    const { data, error } = await supabase.from('submissions').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    return data;
   },
 
-  async createSubmission(data: Record<string, unknown>): Promise<Submission | null> {
-    const year = new Date().getFullYear();
-    const count = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-    data.submission_id = `SUB-${year}-${count}`;
-    data.validation_status = 'received';
-    return await rpc('createSubmission', data).catch(e => { console.error(e); return null; });
+  async createSubmission(data: Partial<Submission>): Promise<Submission> {
+    const { data: sub, error } = await supabase.from('submissions').insert(data).select().single();
+    if (error) throw error;
+    return sub;
   },
 
-  async updateSubmissionStatus(submission_id: string, status: string): Promise<boolean> {
-    return await rpc('updateSubmissionStatus', { submission_id, status }).catch(() => false);
+  // --- FILE STORAGE (Direct to Supabase Storage) ---
+  async saveFile(key: string, base64: string) {
+    // This is handled via supabase-js in the FileUpload component usually
+    console.log('File saving is handled via storage component');
   },
 
-  async addNoticeToSubmission(submission_id: string, type: string, message: string): Promise<boolean> {
-    return await rpc('addNoticeToSubmission', { submission_id, type, message }).catch(() => false);
-  },
-
-  async saveFile(key: string, base64: string): Promise<string | null> {
-    try {
-      await rpc('uploadFile', { key, base64 });
-      return key;
-    } catch (e) {
-      console.error(e);
-      return null;
-    }
-  },
-
-  async getFile(key: string): Promise<string | null> {
-    try {
-      return await rpc('downloadFile', { key });
-    } catch (e) {
-      return null;
-    }
-  },
-
-  async deleteFile(key: string): Promise<boolean> {
-    return await rpc('deleteFile', { key }).catch(() => false);
-  },
-
-  async getOrderById(id: string): Promise<Order | null> {
-    return await rpc('getOrderById', { id }).catch(() => null);
-  },
-
-  async getPricing(): Promise<Pricing | null> {
-    return await rpc('getPricing').catch(() => null);
-  },
-
-  async updatePricing(pricing: Pricing): Promise<boolean> {
-    return await rpc('updatePricing', pricing as unknown as Record<string, unknown>).catch(() => false);
-  },
-
-  async cleanOrphanedFiles(): Promise<{ deleted: number } | null> {
-    return await rpc('cleanOrphanedFiles').catch(() => null);
-  },
-
-  async getShopSettings(): Promise<{is_open: boolean; closing_message: string; standard_hours: string} | null> {
-    return await rpc('getShopSettings').catch(() => null);
-  },
-
-  async updateShopSettings(data: {is_open: boolean; closing_message: string; standard_hours?: string}): Promise<boolean> {
-    return await rpc('updateShopSettings', data).catch(() => false);
+  async deleteFile(key: string) {
+    await supabase.storage.from('library_print_files').remove([key]);
   }
 };
