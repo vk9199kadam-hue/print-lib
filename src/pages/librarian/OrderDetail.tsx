@@ -84,12 +84,47 @@ export default function OrderDetail() {
     if (updated) setOrder(updated);
   };
 
+  const handleDeleteOrder = async () => {
+    if (!window.confirm('Are you sure you want to delete this order? This action cannot be undone.')) return;
+    
+    setLoading(true);
+    try {
+      // Delete associated files from storage
+      for (const file of order.files) {
+        await DB.deleteFile(file.file_storage_key);
+      }
+      
+      // Delete from database
+      const success = await DB.deleteOrder(order.id);
+      if (success) {
+        navigate('/librarian/dashboard');
+      } else {
+        alert('Failed to delete order from database.');
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred while deleting the order.');
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-secondary pb-12">
-      <header className="bg-white border-b border-input px-4 py-4 flex items-center justify-between sticky top-0 z-20 shadow-sm">
-        <button onClick={() => navigate('/librarian/dashboard')} className="flex items-center gap-2 text-muted-foreground hover:text-foreground font-black text-xs uppercase tracking-widest">
-          <ArrowLeft size={16} /> Close Ticket
-        </button>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => navigate('/librarian/dashboard')} 
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground font-black text-xs uppercase tracking-widest"
+          >
+            <ArrowLeft size={16} /> Close Ticket
+          </button>
+          <button 
+            onClick={handleDeleteOrder}
+            className="flex items-center gap-2 text-red-500 hover:text-red-700 font-black text-xs uppercase tracking-widest ml-4 px-3 py-1 bg-red-50 rounded-lg border border-red-100"
+          >
+            Delete Order
+          </button>
+        </div>
         <div className="flex items-center gap-2">
            <Library size={16} className="text-blue-600" />
            <span className="font-black text-xs uppercase tracking-widest">Library Order</span>

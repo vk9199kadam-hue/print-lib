@@ -73,6 +73,13 @@ export const ApiClient = {
     return !error;
   },
 
+  async deleteOrder(id: string): Promise<boolean> {
+    // Delete order files first (on cascade would handle this but being explicit is safer)
+    await supabase.from('order_files').delete().eq('order_id', id);
+    const { error } = await supabase.from('orders').delete().eq('id', id);
+    return !error;
+  },
+
   // --- SHOP SETTINGS ---
   async getShopSettings(): Promise<any> {
     const { data, error } = await supabase.from('shop_settings').select('*').eq('id', 1).single();

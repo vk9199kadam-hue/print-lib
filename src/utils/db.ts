@@ -52,6 +52,9 @@ export const DB = {
   async updateOrderStatus(order_id: string, print_status: Order['print_status']): Promise<boolean> {
     return ApiClient.updateOrderStatus(order_id, print_status);
   },
+  async deleteOrder(id: string): Promise<boolean> {
+    return ApiClient.deleteOrder(id);
+  },
   async updateOrderQR(order_id: string, qr_code: string): Promise<void> {
     // Not critical for now
   },
