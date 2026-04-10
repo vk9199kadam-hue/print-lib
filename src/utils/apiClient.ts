@@ -1,7 +1,7 @@
 import { User, librarian, Order, Pricing, Session, Submission, Notice } from '../types';
 
 async function rpc(action: string, payload: Record<string, unknown> = {}) {
-  const res = await fetch(`/api/rpc?t=${Date.now()}`, {
+  const res = await fetch(`/api/auth?t=${Date.now()}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
     body: JSON.stringify({ action, payload })
