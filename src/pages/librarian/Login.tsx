@@ -26,22 +26,24 @@ export default function LibrarianLogin() {
     // Simulate short loading
     await new Promise(r => setTimeout(r, 600));
 
-    // Fixed credentials check
-    if (username === 'ritcollage123' && password === '12345') {
-      const librarianUser = {
-        id: 'lib_001',
-        name: 'Library Admin',
-        email: 'admin@rit.edu',
-        library_name: 'RIT College Library'
-      };
-      login(librarianUser as any, 'librarian');
-      navigate('/librarian/dashboard', { replace: true });
-    } else {
-      setError('Invalid username or password');
-      setShaking(true);
-      setTimeout(() => setShaking(false), 500);
+    // Database credentials check
+    try {
+      const { ApiClient } = await import('../../utils/apiClient');
+      const user = await ApiClient.verifylibrarian(username, password);
+      
+      if (user) {
+        login(user as any, 'librarian');
+        navigate('/librarian/dashboard', { replace: true });
+      } else {
+        setError('Invalid email or password');
+        setShaking(true);
+        setTimeout(() => setShaking(false), 500);
+      }
+    } catch (err) {
+      setError('System error. Check database connection.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -61,7 +63,7 @@ export default function LibrarianLogin() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-xs font-black text-muted-foreground uppercase tracking-wider mb-2">Username</label>
+            <label className="block text-xs font-black text-muted-foreground uppercase tracking-wider mb-2">Email Address</label>
             <div className="relative">
               <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
@@ -69,7 +71,7 @@ export default function LibrarianLogin() {
                 autoComplete="off"
                 value={username}
                 onChange={e => { setUsername(e.target.value); setError(''); }}
-                placeholder="ritcollage123"
+                placeholder="librarian@rit.edu"
                 className="w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-secondary bg-secondary text-foreground focus:border-blue-600 outline-none transition font-medium"
               />
             </div>
