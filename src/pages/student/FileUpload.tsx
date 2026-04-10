@@ -193,124 +193,7 @@ export default function FileUpload() {
               </button>
             </div>
 
-            {/* Print Settings Grid */}
-            <div className="grid grid-cols-1 gap-4">
-              {/* Print Type Selection */}
-              <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">Print Type</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {([['bw', `B&W`], ['color', `Color`], ['mixed', 'Mixed']] as const).map(([val, label]) => (
-                    <button
-                      key={val}
-                      onClick={() => updateFile(file.temp_id, { print_type: val })}
-                      className={`py-3 rounded-2xl text-[11px] font-black transition border-2 uppercase
-                        ${file.print_type === val ? 'bg-black text-white border-black' : 'bg-background text-foreground border-input hover:border-black/20'}`}
-                    >
-                      {label}
-                      <span className="block text-[8px] font-bold opacity-70 mt-0.5">
-                        {val === 'bw' ? `₹${pricing.bw_rate}/pg` : val === 'color' ? `₹${pricing.color_rate}/pg` : 'Custom'}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-                {file.print_type === 'mixed' && (
-                  <div className="mt-3 animate-fade-in">
-                    <input
-                      placeholder="Color pages, e.g. 1, 3, 5-10"
-                      value={file.color_page_ranges}
-                      onChange={e => updateFile(file.temp_id, { color_page_ranges: e.target.value })}
-                      className="w-full px-4 py-3 text-xs border-2 border-input rounded-2xl bg-white focus:border-blue-primary outline-none transition font-bold"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Layout Helper */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">Sides</label>
-                  <div className="flex bg-secondary p-1 rounded-2xl border border-input">
-                    {(['single', 'double'] as const).map(s => (
-                      <button
-                        key={s}
-                        onClick={() => updateFile(file.temp_id, { sides: s })}
-                        className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase transition
-                          ${file.sides === s ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                   <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">Copies</label>
-                   <div className="flex bg-secondary p-1 rounded-2xl border border-input justify-between items-center">
-                      <button onClick={() => updateFile(file.temp_id, { copies: Math.max(1, file.copies - 1) })} className="w-8 h-8 rounded-xl bg-white flex items-center justify-center hover:bg-gray-100 shadow-sm transition">
-                        <Minus size={12} />
-                      </button>
-                      <span className="font-black text-xs text-foreground">{file.copies}</span>
-                      <button onClick={() => updateFile(file.temp_id, { copies: Math.min(50, file.copies + 1) })} className="w-8 h-8 rounded-xl bg-white flex items-center justify-center hover:bg-gray-100 shadow-sm transition">
-                        <Plus size={12} />
-                      </button>
-                   </div>
-                </div>
-              </div>
-
-              {/* Paper & Density */}
-              <div className="grid grid-cols-2 gap-4">
-                 <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">Paper Size</label>
-                    <div className="flex bg-secondary p-1 rounded-2xl border border-input">
-                      {(['A4', 'A3'] as const).map(p => (
-                        <button
-                          key={p}
-                          onClick={() => updateFile(file.temp_id, { paper_size: p })}
-                          className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase transition
-                            ${(file.paper_size || 'A4') === p ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-                        >
-                          {p}
-                        </button>
-                      ))}
-                    </div>
-                 </div>
-                 <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">Density</label>
-                    <div className="flex bg-secondary p-1 rounded-2xl border border-input">
-                      {([1, 2, 4] as const).map(num => (
-                        <button
-                          key={num}
-                          onClick={() => updateFile(file.temp_id, { slidesPerPage: num })}
-                          className={`flex-1 py-2 rounded-xl text-[10px] font-black transition
-                            ${(file.slidesPerPage || 1) === num ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-                        >
-                          {num}
-                        </button>
-                      ))}
-                    </div>
-                 </div>
-              </div>
-            </div>
-
-            {/* Multi-page visual tip */}
-            {(file.slidesPerPage || 1) > 1 && (
-               <div className="bg-amber-50 p-3 rounded-2xl flex items-center gap-3 border border-amber-100">
-                  <Info size={16} className="text-amber-600" />
-                  <p className="text-[10px] font-bold text-amber-800">Saving paper: {file.slidesPerPage} pages will be printed on one side.</p>
-               </div>
-            )}
-
-            {/* Instruction field */}
-            <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">Special Instructions</label>
-              <textarea
-                rows={2}
-                maxLength={200}
-                placeholder="Ex: Staple pages, print specific pages only..."
-                value={file.student_note}
-                onChange={e => updateFile(file.temp_id, { student_note: e.target.value })}
-                className="w-full px-5 py-4 text-xs border-2 border-secondary rounded-2xl bg-secondary focus:bg-white focus:border-blue-primary outline-none transition font-medium resize-none"
-              />
-            </div>
+            {/* Print settings removed to simplify flow. Defaults to 1 copy, single sided, B&W, A4 */}
           </div>
         ))}
       </div>
@@ -339,7 +222,7 @@ export default function FileUpload() {
                 disabled={!canProceed || !shopSettings.is_open}
                 className="w-full py-5 rounded-2xl bg-blue-primary text-primary-foreground font-black text-lg hover:opacity-95 transition-all transform active:scale-95 disabled:opacity-40 shadow-xl shadow-blue-primary/20 flex items-center justify-center gap-2"
               >
-                PAY NOW WITH RAZORPAY →
+                SUBMIT TO LIBRARIAN →
               </button>
             </div>
           )}

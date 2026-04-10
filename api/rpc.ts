@@ -306,7 +306,7 @@ export default async function handler(req: RPCRequest, res: RPCResponse) {
               
               if (keys.length > 0) {
                 // 2. Wipe from Supabase
-                const { error: storageError } = await supabaseAdmin.storage.from('printease_files').remove(keys);
+                const { error: storageError } = await supabaseAdmin.storage.from('library_print_files').remove(keys);
                 if (storageError) {
                   console.error('SUPABASE_DELETE_FAILED:', storageError.message);
                   // @ts-expect-error - errors property exists on cleanupReport
@@ -369,7 +369,7 @@ export default async function handler(req: RPCRequest, res: RPCResponse) {
       }
       case 'downloadFile': {
         const { data: publicUrlData } = supabaseAdmin.storage
-          .from('printease_files')
+          .from('library_print_files')
           .getPublicUrl(payload.key);
         
         return res.json({ data: publicUrlData.publicUrl });
@@ -378,7 +378,7 @@ export default async function handler(req: RPCRequest, res: RPCResponse) {
         return res.json({ data: true });
       }
       case 'cleanOrphanedFiles': {
-        const { data: files, error } = await supabaseAdmin.storage.from('printease_files').list('', { limit: 10000 });
+        const { data: files, error } = await supabaseAdmin.storage.from('library_print_files').list('', { limit: 10000 });
         if (error) return res.status(500).json({ error: error.message });
         
         const dbFiles = await client.query('SELECT file_storage_key FROM order_files');
@@ -403,7 +403,7 @@ export default async function handler(req: RPCRequest, res: RPCResponse) {
 
         if (orphans.length > 0) {
           for (let i = 0; i < orphans.length; i += 100) {
-            await supabaseAdmin.storage.from('printease_files').remove(orphans.slice(i, i + 100));
+            await supabaseAdmin.storage.from('library_print_files').remove(orphans.slice(i, i + 100));
           }
         }
         

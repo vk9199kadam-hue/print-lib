@@ -23,7 +23,7 @@ export default async function handler(req: any, res: any) {
 
   const client = await pool.connect();
   try {
-    const { data: files, error } = await supabaseAdmin.storage.from('printease_files').list('', { limit: 10000 });
+    const { data: files, error } = await supabaseAdmin.storage.from('library_print_files').list('', { limit: 10000 });
     if (error) return res.status(500).json({ error: error.message });
 
     // 1. Filter out files safely based on age (> 5 days)
@@ -49,7 +49,7 @@ export default async function handler(req: any, res: any) {
 
     if (confirmedOrphans.length > 0) {
       for (let i = 0; i < confirmedOrphans.length; i += 100) {
-        await supabaseAdmin.storage.from('printease_files').remove(confirmedOrphans.slice(i, i + 100));
+        await supabaseAdmin.storage.from('library_print_files').remove(confirmedOrphans.slice(i, i + 100));
       }
     }
 
