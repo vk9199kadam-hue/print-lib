@@ -192,7 +192,31 @@ export default function FileUpload() {
               </button>
             </div>
 
-            {/* Print settings removed to simplify flow. Defaults to 1 copy, single sided, B&W, A4 */}
+            {/* Print settings */}
+            <div className="grid grid-cols-2 gap-4 border-t border-secondary pt-4">
+              <div>
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">Color Type</label>
+                <div className="flex bg-secondary p-1 rounded-xl">
+                   <button onClick={() => updateFile(file.temp_id, { print_type: 'bw' })} className={`flex-1 text-xs font-bold py-2 rounded-lg transition uppercase ${file.print_type === 'bw' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>B&W</button>
+                   <button onClick={() => updateFile(file.temp_id, { print_type: 'color' })} className={`flex-1 text-xs font-bold py-2 rounded-lg transition uppercase ${file.print_type === 'color' ? 'bg-white shadow-sm text-blue-600' : 'text-muted-foreground hover:text-foreground'}`}>Color</button>
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">Print Sides</label>
+                <div className="flex bg-secondary p-1 rounded-xl">
+                   <button onClick={() => updateFile(file.temp_id, { sides: 'single' })} className={`flex-1 text-[10px] font-bold py-2 rounded-lg transition uppercase ${file.sides === 'single' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>Single Page</button>
+                   <button onClick={() => updateFile(file.temp_id, { sides: 'double' })} className={`flex-1 text-[10px] font-bold py-2 rounded-lg transition uppercase ${file.sides === 'double' ? 'bg-white shadow-sm text-blue-600' : 'text-muted-foreground hover:text-foreground'}`}>Front & Back</button>
+                </div>
+              </div>
+              <div className="col-span-2">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">Number of Copies</label>
+                <div className="flex items-center gap-3 bg-secondary p-2 rounded-xl">
+                   <button onClick={() => updateFile(file.temp_id, { copies: Math.max(1, file.copies - 1) })} className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-muted-foreground hover:text-foreground transition hover:bg-slate-50"><Minus size={16}/></button>
+                   <div className="flex-1 text-center font-black text-lg">{file.copies}</div>
+                   <button onClick={() => updateFile(file.temp_id, { copies: file.copies + 1 })} className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-muted-foreground hover:text-foreground transition hover:bg-slate-50"><Plus size={16}/></button>
+                </div>
+              </div>
+            </div>
           </div>
         ))}
       </div>
