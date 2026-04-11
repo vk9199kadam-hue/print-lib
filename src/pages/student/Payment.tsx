@@ -13,7 +13,7 @@ import FileTypeIcon from '../../components/FileTypeIcon';
 export default function Payment() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { currentUser } = useAuth();
+  const { currentUser, loading: authLoading } = useAuth();
   const state = location.state as { 
     files: FileItem[]; 
     extras: ExtraServices; 
@@ -33,26 +33,27 @@ export default function Payment() {
   const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
+    if (authLoading) return;
     if (!state || !currentUser) {
       setRedirecting(true);
       navigate('/student/upload');
     }
-  }, [state, currentUser, navigate]);
+  }, [state, currentUser, authLoading, navigate]);
   
   const pricing = DB.getPricing();
   
   const filesWithPrices = useMemo(() => {
     if (!state?.files) return [];
     return state.files.map(f => {
-      const calc = calcFilePrice(f, pricing);
+      const calc = calcFilePrice(f, pricing, state.isCapstone);
       return { ...f, bw_pages: calc.bw_pages, color_pages: calc.color_pages, file_price: calc.file_price };
     });
-  }, [state?.files, pricing]);
+  }, [state?.files, pricing, state?.isCapstone]);
 
   const priceResult = useMemo(() => {
-    if (!state?.files || !state?.extras) return { subtotal: 0, service_fee: 0, total_amount: 0 };
-    return calcTotal(state.files, state.extras, pricing);
-  }, [state?.files, state?.extras, pricing]);
+    if (!state?.files || !state?.extras) return { itemized: [], subtotal: 0, service_fee: 0, total_amount: 0 };
+    return calcTotal(state.files, state.extras, pricing, state.isCapstone);
+  }, [state?.files, state?.extras, pricing, state?.isCapstone]);
 
   useEffect(() => {
     if (redirecting) return;
@@ -61,6 +62,12 @@ export default function Payment() {
     }, 1500);
     return () => clearTimeout(timer);
   }, [redirecting]);
+
+  if (authLoading) return (
+    <div className="min-h-screen flex items-center justify-center bg-secondary">
+       <Loader2 className="animate-spin text-blue-primary" size={40} />
+    </div>
+  );
 
   if (redirecting || !state || !currentUser) return null;
 
