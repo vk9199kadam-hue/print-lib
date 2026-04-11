@@ -19,7 +19,6 @@ import Contact from './pages/public/Contact';
 import Terms from './pages/public/Terms';
 import Privacy from './pages/public/Privacy';
 import Refund from './pages/public/Refund';
-import Shipping from './pages/public/Shipping';
 
 function ProtectedStudentRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
@@ -44,7 +43,6 @@ function AppRoutes() {
       <Route path="/terms" element={<Terms />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/refund" element={<Refund />} />
-      <Route path="/shipping" element={<Shipping />} />
       
       {/* Student Routes */}
       <Route path="/student/login" element={<StudentLogin />} />
