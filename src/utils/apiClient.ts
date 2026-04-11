@@ -84,9 +84,22 @@ export const ApiClient = {
     
     if (files && files.length > 0) {
       const filesWithOrderId = files.map(f => ({
-        ...f,
         order_id: order.id,
-        paper_size: f.paper_size || 'A4'
+        file_name: f.file_name,
+        file_storage_key: f.file_storage_key,
+        file_type: f.file_type,
+        file_extension: f.file_extension,
+        page_count: f.page_count,
+        print_type: f.print_type,
+        color_page_ranges: f.color_page_ranges,
+        copies: f.copies,
+        sides: f.sides,
+        bw_pages: f.bw_pages,
+        color_pages: f.color_pages,
+        file_price: f.file_price,
+        student_note: f.student_note,
+        paper_size: f.paper_size || 'A4',
+        file_size_kb: f.file_size_kb
       }));
       const { error: fErr } = await supabase.from('order_files').insert(filesWithOrderId);
       if (fErr) throw fErr;
