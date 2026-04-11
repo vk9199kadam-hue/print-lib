@@ -196,36 +196,63 @@ export default function OrderDetail() {
           </div>
         )}
 
-        {/* Files Checklist */}
-        <div className="bg-white rounded-[32px] border border-input p-8 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-             <h3 className="font-black text-lg text-foreground uppercase tracking-tight">Documents to Print ({order.files.length})</h3>
-             {filesDownloaded && <div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-black uppercase">Ready to Print</div>}
+        {/* Files Checklist Refactored */}
+        <div className="bg-white rounded-[32px] border border-input overflow-hidden shadow-sm">
+          <div className="bg-secondary px-8 py-6 flex items-center justify-between border-b border-input">
+             <div className="flex flex-col">
+                <h3 className="font-black text-xs text-muted-foreground uppercase tracking-widest">Documents to Print</h3>
+                <p className="font-syne font-black text-xl text-foreground">{order.files.length} {order.files.length === 1 ? 'Total File' : 'Total Files'}</p>
+             </div>
+             <button 
+               onClick={async () => {
+                 for (const f of order.files) {
+                   await downloadSingleFile(f);
+                   await new Promise(r => setTimeout(r, 600)); // Prevent browser blockage
+                 }
+               }}
+               className="bg-blue-600 text-white px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 hover:scale-105 transition flex items-center gap-2"
+             >
+               <Download size={14} /> Download All Files
+             </button>
           </div>
           
-          <div className="space-y-4">
+          <div className="divide-y divide-input">
             {order.files.map((f, i) => {
               const isDownloaded = downloadedFiles.has(f.file_storage_key);
               return (
-                <div key={i} className={`flex items-center gap-4 p-5 rounded-3xl border-2 transition-all ${isDownloaded ? 'bg-secondary border-transparent opacity-60' : 'bg-white border-secondary shadow-sm hover:border-blue-600/30'}`}>
-                  <div className="p-3 bg-white rounded-2xl shadow-sm">
-                    <FileTypeIcon type={f.file_type} size={20} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-black text-foreground truncate uppercase tracking-tight mb-1">{f.file_name}</p>
-                    <div className="flex flex-wrap gap-2">
-                       <span className="text-[10px] font-black text-blue-600 border border-blue-100 px-2 py-0.5 rounded-lg uppercase">{f.print_type}</span>
-                       <span className="text-[10px] font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded-lg uppercase">{f.page_count} Pgs</span>
-                       <span className="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded-lg uppercase">×{f.copies} Copies</span>
-                       <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg uppercase">{f.sides}</span>
+                <div key={i} className="p-6 hover:bg-slate-50 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white rounded-2xl border border-input flex items-center justify-center shadow-sm">
+                      <FileTypeIcon type={f.file_type} size={22} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-black text-sm text-foreground uppercase tracking-tight truncate">{f.file_name}</p>
+                      <div className="flex gap-2 mt-1">
+                         <span className="text-[9px] font-bold text-muted-foreground uppercase bg-secondary px-2 py-0.5 rounded">{f.print_type}</span>
+                         <span className="text-[9px] font-bold text-muted-foreground uppercase bg-secondary px-2 py-0.5 rounded">{f.page_count} Pages × {f.copies} Copies</span>
+                      </div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => downloadSingleFile(f)}
-                    className={`w-12 h-12 rounded-2xl flex items-center justify-center transition shadow-sm border-2 ${isDownloaded ? 'bg-green-500 border-green-500 text-white' : 'bg-white border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white'}`}
-                  >
-                    {isDownloaded ? <CheckCircle size={20} /> : <Download size={20} />}
-                  </button>
+
+                  <div className="flex items-center justify-between md:justify-end gap-3 bg-secondary/30 md:bg-transparent p-3 md:p-0 rounded-2xl">
+                    <div className="flex flex-col md:items-end">
+                       <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Print Readiness</span>
+                       {isDownloaded ? (
+                         <span className="text-[10px] font-black text-green-600 uppercase flex items-center gap-1"><CheckCircle size={10} /> Ready to Print</span>
+                       ) : (
+                         <span className="text-[10px] font-black text-blue-600 uppercase italic">Pending Download</span>
+                       )}
+                    </div>
+                    <button
+                      onClick={() => downloadSingleFile(f)}
+                      className={`px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition flex items-center gap-2 border-2
+                        ${isDownloaded 
+                          ? 'bg-green-50 border-green-200 text-green-600' 
+                          : 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-600/20'}`}
+                    >
+                      {isDownloaded ? 'Downloaded' : 'Download Now'} <Download size={14} />
+                    </button>
+                  </div>
                 </div>
               );
             })}
