@@ -22,22 +22,39 @@ export default function Payment() {
   const [processing, setProcessing] = useState(true);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
-
-  if (!state || !currentUser) { navigate('/student/upload'); return null; }
-  
-  const pricing = DB.getPricing();
-  const filesWithPrices = state.files.map(f => {
-    const calc = calcFilePrice(f, pricing);
-    return { ...f, bw_pages: calc.bw_pages, color_pages: calc.color_pages, file_price: calc.file_price };
-  });
-  const priceResult = calcTotal(state.files, state.extras, pricing);
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
+    if (!state || !currentUser) {
+      setRedirecting(true);
+      navigate('/student/upload');
+    }
+  }, [state, currentUser, navigate]);
+  
+  const pricing = DB.getPricing();
+  
+  const filesWithPrices = useMemo(() => {
+    if (!state?.files) return [];
+    return state.files.map(f => {
+      const calc = calcFilePrice(f, pricing);
+      return { ...f, bw_pages: calc.bw_pages, color_pages: calc.color_pages, file_price: calc.file_price };
+    });
+  }, [state?.files, pricing]);
+
+  const priceResult = useMemo(() => {
+    if (!state?.files || !state?.extras) return { subtotal: 0, service_fee: 0, total_amount: 0 };
+    return calcTotal(state.files, state.extras, pricing);
+  }, [state?.files, state?.extras, pricing]);
+
+  useEffect(() => {
+    if (redirecting) return;
     const timer = setTimeout(() => {
       handleFinishPayment();
     }, 1500);
     return () => clearTimeout(timer);
-  }, []);
+  }, [redirecting]);
+
+  if (redirecting || !state || !currentUser) return null;
 
   const handleFinishPayment = async () => {
     try {
@@ -146,7 +163,7 @@ export default function Payment() {
           </p>
           
           <button
-            onClick={handleDemoProcess}
+            onClick={handleFinishPayment}
             disabled={processing || success}
             className="w-full py-5 rounded-2xl bg-blue-primary text-primary-foreground font-black text-lg hover:opacity-95 transition-all transform active:scale-95 disabled:opacity-50 shadow-xl shadow-blue-primary/20 flex flex-col items-center justify-center border-b-4 border-blue-800 active:border-b-0 active:translate-y-1"
           >
