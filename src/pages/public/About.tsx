@@ -12,10 +12,10 @@ export default function About() {
       <div className="max-w-4xl mx-auto bg-card p-8 rounded-2xl shadow-sm border border-input">
         <h1 className="text-3xl font-bold mb-6 text-blue-primary">About Us</h1>
         <div className="space-y-4 text-muted-foreground">
-          <p>Welcome to Library Print.</p>
-          <p>We are a dedicated online platform designed to simplify document printing for college students and staff. Our mission is to bridge the gap between students needing fast, reliable printing and librarians offering print services, reducing waiting lines and ensuring seamless order management.</p>
-          <p>Through Library Print, you can seamlessly upload documents, select precisely how you want them printed, and pay online. Your print orders are instantly sent directly to our partnered print shops.</p>
-          <p>Our goal is to make campus printing incredibly efficient, fully automated, and incredibly user-friendly!</p>
+          <p>Welcome to PrintEase Library.</p>
+          <p>We are a dedicated online platform designed to simplify document printing for college students and staff. Our mission is to bridge the gap between students needing fast, reliable printing and the RIT Library services, reducing waiting lines and ensuring seamless order management.</p>
+          <p>Through PrintEase Library, you can seamlessly upload documents, select precisely how you want them printed, and submit them directly. Your print orders are instantly sent to the library desk for processing.</p>
+          <p>Our goal is to make campus printing incredibly efficient, fully transparent, and user-friendly!</p>
         </div>
       </div>
     </div>

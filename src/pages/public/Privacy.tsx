@@ -16,9 +16,9 @@ export default function Privacy() {
           <h2 className="text-xl font-bold text-foreground mt-6 mb-2">1. Personal Information We Collect</h2>
           <p>We collect essential details to process your documents, including your Name, Roll Number, Email, and the structural digital files (PDF, PPT, Word) you upload.</p>
           <h2 className="text-xl font-bold text-foreground mt-6 mb-2">2. How Do We Use Your Personal Information?</h2>
-          <p>We strictly use the Order Information to fulfill any printing services placed through our Site. The documents uploaded are temporarily stored in secure cloud storage solely for the purpose of printing by the vendor and are deleted periodically to protect intellectual property.</p>
-          <h2 className="text-xl font-bold text-foreground mt-6 mb-2">3. Sharing Your Personal Information</h2>
-          <p>Your uploaded documents are shared specifically with the chosen Print Shop to complete the order. We do not sell or freely distribute any user data.</p>
+          <p>Your privacy is our priority. At PrintEase Library, we implement strict standards for handling student documents.</p>
+          <p>Your uploaded documents are processed specifically by the RIT Library desk staff to complete the order. We do not sell or freely distribute any user data.</p>
+          <p>We only collect the information necessary to identify your order (Name and PRN). All identifiable data and files are purged according to our temporary storage policy.</p>
         </div>
       </div>
     </div>

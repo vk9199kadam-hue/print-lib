@@ -119,7 +119,7 @@ export default function OrderTracking() {
         {order.print_status === 'ready' && (
           <div className="bg-green-primary text-primary-foreground rounded-2xl p-6 text-center animate-bounce-in">
             <p className="text-2xl mb-1">🎉 Your print is ready!</p>
-            <p className="text-sm text-green-100">Walk to the shop and show your Print ID</p>
+            <p className="text-sm text-green-100">Walk to the library desk and show your Print ID</p>
           </div>
         )}
 

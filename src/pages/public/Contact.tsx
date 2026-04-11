@@ -14,7 +14,7 @@ export default function Contact() {
         <div className="space-y-4 text-muted-foreground">
           <p>If you have any questions or require support regarding your print orders, please contact us immediately.</p>
           <div className="my-6 space-y-3 bg-secondary/50 p-6 rounded-xl border border-input">
-            <p><strong className="text-foreground">Legal Entity Name:</strong> Viraj Kadam (Library Print)</p>
+            <p><strong className="text-foreground">Legal Entity Name:</strong> Viraj Kadam (PrintEase Library)</p>
             <p><strong className="text-foreground">Official Email:</strong> vk9199kadam@gmail.com</p>
             <p><strong className="text-foreground">Contact Number:</strong> +91-9359075793</p>
             <p><strong className="text-foreground">Operational Address:</strong> College Campus, Ishwarpur, PIN - 415409, Maharashtra, India</p>
