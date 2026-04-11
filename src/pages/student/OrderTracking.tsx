@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, Navigate } from 'react-router-dom';
-import { ArrowLeft, Upload, CreditCard, Clock, Printer, Bell, CheckCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, Upload, CreditCard, Clock, Printer, Bell, CheckCircle, Loader2, Download as DownloadIcon } from 'lucide-react';
 import { DB } from '../../utils/db';
 import { supabase } from '../../utils/fileStorage';
-import { Order } from '../../types';
+import { Order, FileItem } from '../../types';
 import { playReadySound } from '../../utils/sound';
-
+import FileTypeIcon from '../../components/FileTypeIcon';
 
 const steps = [
   { key: 'uploaded', label: 'Uploaded', icon: Upload },
@@ -80,6 +80,22 @@ export default function OrderTracking() {
       supabase.removeChannel(channel);
     };
   }, [order_id, retryCount]);
+
+  const handleDownload = async (file: FileItem) => {
+    try {
+      const url = await DB.getFile(file.file_storage_key);
+      if (url) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = file.file_name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    } catch (e) {
+      alert('Download failed');
+    }
+  };
 
   if (loading && !order) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-secondary">
@@ -157,19 +173,38 @@ export default function OrderTracking() {
             <span className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleString()}</span>
           </div>
           <div className="space-y-1 text-sm text-muted-foreground">
-          <div className="flex flex-wrap gap-2 text-sm">
-            <span className="font-semibold text-blue-primary bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100">
-              {order.files.length} FILE{order.files.length !== 1 ? 'S' : ''}
-            </span>
-            <span className="font-semibold text-emerald-primary bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100">
-              {order.total_pages} PAGES
-            </span>
-            {order.files.some(f => (f.slidesPerPage || 0) > 1) && (
-              <span className="font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-lg border border-orange-100 uppercase text-[10px] flex items-center">MULTI-SLIDE</span>
-            )}
-            <span className="ml-auto font-bold text-xl text-foreground">₹{order.total_amount}</span>
+            <div className="flex flex-wrap gap-2 text-sm">
+              <span className="font-semibold text-blue-primary bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100">
+                {order.files.length} FILE{order.files.length !== 1 ? 'S' : ''}
+              </span>
+              <span className="font-semibold text-emerald-primary bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100">
+                {order.total_pages} PAGES
+              </span>
+              <span className="ml-auto font-bold text-xl text-foreground">₹{order.total_amount}</span>
+            </div>
           </div>
-          </div>
+        </div>
+
+        {/* File List for Download */}
+        <div className="bg-card rounded-2xl border border-input p-5 space-y-4 shadow-sm">
+           <h3 className="font-syne font-black text-xs uppercase tracking-widest text-muted-foreground mb-4">Your Documents (Download to Print)</h3>
+           <div className="space-y-3">
+              {order.files.map((file, i) => (
+                <div key={i} className="flex items-center gap-4 bg-secondary/50 p-3 rounded-xl border border-input/50 group hover:border-blue-primary/30 transition-all">
+                   <FileTypeIcon type={file.file_type} size={20} />
+                   <div className="flex-1 min-w-0">
+                      <p className="text-xs font-black text-foreground truncate uppercase">{file.file_name}</p>
+                      <p className="text-[10px] text-muted-foreground font-bold">{file.page_count} Pages • {file.copies} Copies</p>
+                   </div>
+                   <button 
+                     onClick={() => handleDownload(file)}
+                     className="p-2 bg-blue-600 text-white rounded-lg shadow-sm hover:scale-105 transition active:scale-95"
+                   >
+                     <DownloadIcon size={16} />
+                   </button>
+                </div>
+              ))}
+           </div>
         </div>
 
         {/* QR */}
