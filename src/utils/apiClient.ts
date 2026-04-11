@@ -63,18 +63,20 @@ export const ApiClient = {
 
   // --- ORDERS ---
   async createOrder(data: Partial<Order>): Promise<Order> {
-    const order_id = data.order_id || `ORD-${Date.now().toString().slice(-6)}`;
+    const { files, ...orderData } = data;
+    const order_id = orderData.order_id || `ORD-${Date.now().toString().slice(-6)}`;
+    
     const { data: order, error } = await supabase.from('orders').insert({
-      ...data,
+      ...orderData,
       order_id,
-      payment_status: data.payment_status || 'paid',
-      print_status: data.print_status || 'queued'
+      payment_status: orderData.payment_status || 'paid',
+      print_status: orderData.print_status || 'queued'
     }).select().single();
     
     if (error) throw error;
     
-    if (data.files && data.files.length > 0) {
-      const filesWithOrderId = data.files.map(f => ({
+    if (files && files.length > 0) {
+      const filesWithOrderId = files.map(f => ({
         ...f,
         order_id: order.id,
         paper_size: f.paper_size || 'A4'
