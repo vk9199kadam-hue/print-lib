@@ -13,6 +13,15 @@ import OrderConfirmed from './pages/student/OrderConfirmed';
 import LibrarianLogin from './pages/librarian/Login';
 import LibrarianDashboard from './pages/librarian/Dashboard';
 import OrderDetail from './pages/librarian/OrderDetail';
+import SubmissionsInbox from './pages/librarian/SubmissionsInbox';
+import CapstoneOrders from './pages/librarian/CapstoneOrders';
+import Analytics from './pages/librarian/Analytics';
+import LibrarySettings from './pages/librarian/Settings';
+
+import OrderHistory from './pages/student/OrderHistory';
+import OrderTracking from './pages/student/OrderTracking';
+import Profile from './pages/student/Profile';
+import CapstoneUpload from './pages/student/CapstoneUpload';
 
 import About from './pages/public/About';
 import Contact from './pages/public/Contact';
@@ -27,7 +36,7 @@ function ProtectedStudentRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function ProtectedShopRoute({ children }: { children: React.ReactNode }) {
+function ProtectedLibrarianRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-blue-600" size={32} /></div>;
   if (!session || session.role !== 'librarian') return <Navigate to="/librarian/login" replace />;
@@ -50,11 +59,19 @@ function AppRoutes() {
       <Route path="/student/upload" element={<ProtectedStudentRoute><FileUpload /></ProtectedStudentRoute>} />
       <Route path="/student/payment" element={<ProtectedStudentRoute><Payment /></ProtectedStudentRoute>} />
       <Route path="/student/confirmed" element={<ProtectedStudentRoute><OrderConfirmed /></ProtectedStudentRoute>} />
+      <Route path="/student/history" element={<ProtectedStudentRoute><OrderHistory /></ProtectedStudentRoute>} />
+      <Route path="/student/track/:order_id" element={<ProtectedStudentRoute><OrderTracking /></ProtectedStudentRoute>} />
+      <Route path="/student/profile" element={<ProtectedStudentRoute><Profile /></ProtectedStudentRoute>} />
+      <Route path="/student/capstone" element={<ProtectedStudentRoute><CapstoneUpload /></ProtectedStudentRoute>} />
       
       {/* Librarian Routes */}
       <Route path="/librarian/login" element={<LibrarianLogin />} />
-      <Route path="/librarian/dashboard" element={<ProtectedShopRoute><LibrarianDashboard /></ProtectedShopRoute>} />
-      <Route path="/librarian/order/:order_id" element={<ProtectedShopRoute><OrderDetail /></ProtectedShopRoute>} />
+      <Route path="/librarian/dashboard" element={<ProtectedLibrarianRoute><LibrarianDashboard /></ProtectedLibrarianRoute>} />
+      <Route path="/librarian/order/:order_id" element={<ProtectedLibrarianRoute><OrderDetail /></ProtectedLibrarianRoute>} />
+      <Route path="/librarian/submissions" element={<ProtectedLibrarianRoute><SubmissionsInbox /></ProtectedLibrarianRoute>} />
+      <Route path="/librarian/capstones" element={<ProtectedLibrarianRoute><CapstoneOrders /></ProtectedLibrarianRoute>} />
+      <Route path="/librarian/analytics" element={<ProtectedLibrarianRoute><Analytics /></ProtectedLibrarianRoute>} />
+      <Route path="/librarian/settings" element={<ProtectedLibrarianRoute><LibrarySettings /></ProtectedLibrarianRoute>} />
       
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

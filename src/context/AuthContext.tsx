@@ -8,7 +8,7 @@ interface AuthContextType {
   isStudent: boolean;
   islibrarian: boolean;
   currentUser: User | null;
-  currentShop: librarian | null;
+  currentLibrary: librarian | null;
   login: (user: User | librarian, role: Session['role']) => void;
   logout: () => void;
   loading: boolean;
@@ -37,12 +37,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const isStudent = session?.role === 'student';
-  const islibrarian = session?.role === 'librarian';
+  const isLibrarian = session?.role === 'librarian';
   const currentUser = isStudent ? (session?.user as User) : null;
-  const currentShop = islibrarian ? (session?.user as librarian) : null;
+  const currentLibrary = isLibrarian ? (session?.user as librarian) : null;
 
   return (
-    <AuthContext.Provider value={{ session, isStudent, islibrarian, currentUser, currentShop, login, logout, loading }}>
+    <AuthContext.Provider value={{ session, isStudent, isLibrarian, currentUser, currentLibrary, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

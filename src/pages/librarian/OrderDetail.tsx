@@ -146,6 +146,25 @@ export default function OrderDetail() {
           <h1 className="text-3xl font-black text-foreground tracking-tight uppercase">{order.student_name}</h1>
           <p className="text-sm font-bold text-muted-foreground mt-1">PRN: <span className="text-foreground">{order.student_print_id}</span> • Registered Library User</p>
           
+          {order.order_type === 'capstone' && (
+            <div className="mt-4 p-4 bg-emerald-50 rounded-2xl border border-emerald-100 grid grid-cols-2 gap-4">
+               <div>
+                  <p className="text-[10px] font-black text-emerald-800 uppercase tracking-widest mb-1">College/Dept</p>
+                  <p className="text-xs font-bold text-emerald-900 truncate">{order.college || 'N/A'} • {order.department || 'N/A'}</p>
+               </div>
+               <div>
+                  <p className="text-[10px] font-black text-emerald-800 uppercase tracking-widest mb-1">Target Date</p>
+                  <p className="text-xs font-bold text-emerald-900">{order.receiving_date || 'N/A'}</p>
+               </div>
+               {order.contact_number && (
+                 <div className="col-span-2 border-t border-emerald-100 pt-2">
+                    <p className="text-[10px] font-black text-emerald-800 uppercase tracking-widest mb-1">Contact</p>
+                    <p className="text-xs font-bold text-emerald-900">{order.contact_number}</p>
+                 </div>
+               )}
+            </div>
+          )}
+          
           <div className="mt-8 flex items-center gap-8 border-t border-secondary pt-8">
              <div className="text-center md:text-left">
                 <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Total Pages</p>

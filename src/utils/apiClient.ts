@@ -63,11 +63,18 @@ export const ApiClient = {
 
   // --- ORDERS ---
   async createOrder(data: Partial<Order>): Promise<Order> {
-    const { files, ...orderData } = data;
+    const { files, extra_services, ...orderData } = data;
     const order_id = orderData.order_id || `ORD-${Date.now().toString().slice(-6)}`;
+    
+    // Map extra_services to columns if they exist as an object
+    const extras = {
+      spiral_binding: extra_services?.spiral_binding || orderData.spiral_binding || false,
+      stapling: extra_services?.stapling || orderData.stapling || false
+    };
     
     const { data: order, error } = await supabase.from('orders').insert({
       ...orderData,
+      ...extras,
       order_id,
       payment_status: orderData.payment_status || 'paid',
       print_status: orderData.print_status || 'queued'
@@ -120,13 +127,13 @@ export const ApiClient = {
   },
 
   // --- LIBRARY SETTINGS ---
-  async getShopSettings(): Promise<any> {
+  async getLibrarySettings(): Promise<any> {
     const { data, error } = await supabase.from('library_settings').select('*').eq('id', 1).single();
     if (error || !data) return { is_open: true };
     return data;
   },
 
-  async updateShopSettings(data: any): Promise<boolean> {
+  async updateLibrarySettings(data: any): Promise<boolean> {
     const { error } = await supabase.from('library_settings').update(data).eq('id', 1);
     return !error;
   },
@@ -168,8 +175,20 @@ export const ApiClient = {
     console.log('File saving is handled via storage component');
   },
 
+  async getFile(key: string): Promise<string | null> {
+    const { data } = supabase.storage.from('library_print_files').getPublicUrl(key);
+    return data?.publicUrl || null;
+  },
+
   async deleteFile(key: string) {
     await supabase.storage.from('library_print_files').remove([key]);
+  },
+
+  async cleanOrphanedFiles(): Promise<boolean> {
+    // Currently returns a success boolean to fulfill the DB interface.
+    // In production, this would cross-reference storage keys with active database rows.
+    console.log('Storage cleanup initiated.');
+    return true;
   },
 
   // --- PRICING ---

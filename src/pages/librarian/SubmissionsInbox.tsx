@@ -15,7 +15,7 @@ function timeAgo(date: string) {
 
 export default function SubmissionsInbox() {
   const navigate = useNavigate();
-  const { currentShop, logout } = useAuth();
+  const { currentLibrary, logout } = useAuth();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -85,7 +85,7 @@ export default function SubmissionsInbox() {
       <aside className="hidden md:flex w-60 flex-col p-4 text-primary-foreground fixed h-full z-30" style={{ backgroundColor: '#061A0F' }}>
         <div className="mb-8">
           <h1 className="font-syne font-bold text-xl">Print<span className="text-green-400">Ease</span></h1>
-          <p className="text-xs text-green-300/60 mt-0.5">{currentShop?.library_name}</p>
+          <p className="text-xs text-green-300/60 mt-0.5">{currentLibrary?.library_name}</p>
         </div>
         <nav className="space-y-1 flex-1">
           <button onClick={() => navigate('/librarian/dashboard')} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-green-300/60 hover:text-green-300 hover:bg-green-primary/10 transition">

@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, LogOut, Printer, Zap, Inbox, BookOpen, BarChart3, Settings as SettingsIcon, User, Phone, Globe, CreditCard, CheckCircle, AlertCircle, Loader2, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { DB } from '../../utils/db';
+import { supabase } from '../../utils/supabase';
 
 
 
-export default function ShopSettings() {
+export default function LibrarySettings() {
   const navigate = useNavigate();
-  const { currentShop, logout } = useAuth();
+  const { currentLibrary, logout } = useAuth();
   const [loading, setLoading] = useState(false);
   const [isCleaning, setIsCleaning] = useState(false);
   const [showToast, setShowToast] = useState(false);
@@ -39,27 +40,34 @@ export default function ShopSettings() {
       const currentPricing = await DB.getPricing();
       if (currentPricing) setPricing(currentPricing);
 
-      const settings = await DB.getShopSettings();
-      if (settings) {
+      const settings = await DB.getLibrarySettings();
+      if (settings && currentLibrary) {
         setFormData({
-          name: 'Librarian', // Fallback or from session
-          library_name: settings.shop_name || 'RIT Library',
-          email: 'librarian@rit.edu',
-          upi_id: settings.upi_id || '',
-          contact_number: settings.contact_number || ''
+          name: currentLibrary.name || 'Librarian',
+          library_name: currentLibrary.library_name || 'RIT Library',
+          email: currentLibrary.email || 'librarian@rit.edu',
+          upi_id: currentLibrary.upi_id || '',
+          contact_number: currentLibrary.contact_number || ''
         });
       }
     };
     loadData();
-  }, []);
+  }, [currentLibrary]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      // Save profile and pricing to DB
-      await DB.updateShopSettings(formData);
-      await DB.savePricing(pricing);
+       // Save profile to librarians table and pricing to settings table
+       if (currentLibrary?.id) {
+         await supabase.from('librarians').update({
+           name: formData.name,
+           library_name: formData.library_name,
+           upi_id: formData.upi_id,
+           contact_number: formData.contact_number
+         }).eq('id', currentLibrary.id);
+       }
+       await DB.savePricing(pricing);
 
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
@@ -91,7 +99,7 @@ export default function ShopSettings() {
       <aside className="hidden md:flex w-60 flex-col p-4 text-primary-foreground fixed h-full z-30" style={{ backgroundColor: '#061A0F' }}>
         <div className="mb-8">
           <h1 className="font-syne font-bold text-xl">Print<span className="text-green-400">Ease</span></h1>
-          <p className="text-xs text-green-300/60 mt-0.5">{currentShop?.library_name}</p>
+          <p className="text-xs text-green-300/60 mt-0.5">{currentLibrary?.library_name}</p>
         </div>
         <nav className="space-y-1 flex-1">
           <button onClick={() => navigate('/librarian/dashboard')} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-green-300/60 hover:text-green-300 hover:bg-green-primary/10 transition">
@@ -120,7 +128,7 @@ export default function ShopSettings() {
           <button onClick={() => navigate('/librarian/dashboard')} className="p-2 hover:bg-secondary rounded-lg transition">
             <ArrowLeft size={20} />
           </button>
-          <h2 className="font-syne font-bold text-xl">Shop Profile Settings</h2>
+          <h2 className="font-syne font-bold text-xl">Library Profile Settings</h2>
         </header>
 
         <div className="max-w-2xl mx-auto p-6 space-y-6">
@@ -137,7 +145,7 @@ export default function ShopSettings() {
           <form onSubmit={handleSave} className="bg-card border border-input rounded-2xl p-6 space-y-6 shadow-sm animate-fade-in-up">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-2"><User size={14}/> librarian Name</label>
+                <label className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-2"><User size={14}/> Librarian Name</label>
                 <input 
                   type="text" 
                   value={formData.name} 
@@ -146,7 +154,7 @@ export default function ShopSettings() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-2"><Globe size={14}/> Shop Name</label>
+                <label className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-2"><Globe size={14}/> Library Name</label>
                 <input 
                   type="text" 
                   value={formData.library_name} 
@@ -155,7 +163,7 @@ export default function ShopSettings() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-2"><CreditCard size={14}/> Shop UPI ID (for QR Payments)</label>
+                <label className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-2"><CreditCard size={14}/> Library UPI ID (for QR Payments)</label>
                 <input 
                   type="text" 
                   placeholder="e.g. yourname@upi"

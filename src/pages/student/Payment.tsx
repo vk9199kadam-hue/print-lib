@@ -17,6 +17,14 @@ export default function Payment() {
   const state = location.state as { 
     files: FileItem[]; 
     extras: ExtraServices; 
+    isCapstone?: boolean;
+    capstoneData?: {
+      name: string;
+      contact: string;
+      college: string;
+      department: string;
+      receiving_date: string;
+    };
   } | null;
 
   const [processing, setProcessing] = useState(true);
@@ -69,8 +77,8 @@ export default function Payment() {
         order_id: tempId,
         student_id: currentUser.id,
         student_print_id: currentUser.student_print_id,
-        student_name: currentUser.name,
-        order_type: 'standard',
+        student_name: state.isCapstone ? (state.capstoneData?.name || currentUser.name) : currentUser.name,
+        order_type: state.isCapstone ? 'capstone' : 'standard',
         files: filesWithPrices.map(({ base64, ...rest }) => rest as FileItem),
         total_bw_pages: filesWithPrices.reduce((s, f) => s + f.bw_pages, 0),
         total_color_pages: filesWithPrices.reduce((s, f) => s + f.color_pages, 0),
@@ -82,6 +90,10 @@ export default function Payment() {
         payment_status: 'paid', // Fake success for library platform
         print_status: 'queued',
         qr_code: qr,
+        contact_number: state.capstoneData?.contact,
+        college: state.capstoneData?.college,
+        department: state.capstoneData?.department,
+        receiving_date: state.capstoneData?.receiving_date
       });
 
       if (order) {

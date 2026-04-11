@@ -3,11 +3,11 @@ import { librarian, Pricing } from '../types';
 export function initializeApp(): void {
   if (!localStorage.getItem('Library Print_librarian')) {
     const librarian: librarian = {
-      id: 'shop_001',
-      name: 'Shop Owner',
-      email: 'shop@Library Print.com',
-      password: 'shop123',
-      library_name: 'College Print Center',
+      id: 'lib_001',
+      name: 'Librarian',
+      email: 'librarian@rit.edu',
+      password: 'lib123',
+      library_name: 'RIT Library Print Center',
       is_active: true
     };
     localStorage.setItem('Library Print_librarian', JSON.stringify(librarian));

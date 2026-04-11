@@ -18,15 +18,28 @@ function timeAgo(date: string) {
 
 export default function LibrarianDashboard() {
   const navigate = useNavigate();
-  const { currentShop, logout } = useAuth();
+  const { currentLibrary, logout } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState('queued'); // Default to queued as it's the most important
   const [search, setSearch] = useState('');
   const prevCount = useRef(0);
   
-  const [shopSettings, setShopSettings] = useState<{is_open: boolean; closing_message: string; standard_hours: string}>({
-    is_open: true, closing_message: '', standard_hours: '10:00 AM to 8:00 PM'
+  const [librarySettings, setLibrarySettings] = useState<{is_open: boolean; closing_message: string; standard_hours: string}>({
+    is_open: true,
+    closing_message: "Library Printing is currently closed. We'll be back soon!",
+    standard_hours: "10:00 AM to 8:00 PM"
   });
+
+  useEffect(() => {
+    const checkStatus = () => {
+      DB.getLibrarySettings().then(settings => {
+        if (settings) setLibrarySettings(settings);
+      });
+    };
+    checkStatus();
+    const interval = setInterval(checkStatus, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -38,10 +51,6 @@ export default function LibrarianDashboard() {
           }
           prevCount.current = standardOrders.length;
           setOrders(standardOrders);
-
-          const res = await fetch('/api/rpc', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ action: 'getShopSettings' }) });
-          const { data } = await res.json();
-          if (data) setShopSettings(data);
       }
     };
     load();

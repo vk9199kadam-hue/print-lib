@@ -166,11 +166,11 @@ export const DB = {
   async cleanOrphanedFiles() {
     return ApiClient.cleanOrphanedFiles();
   },
-  async getShopSettings() {
-    return ApiClient.getShopSettings();
+  async getLibrarySettings() {
+    return ApiClient.getLibrarySettings();
   },
-  async updateShopSettings(data: { is_open: boolean; closing_message: string; standard_hours?: string }) {
-    return ApiClient.updateShopSettings(data);
+  async updateLibrarySettings(data: { is_open: boolean; closing_message: string; standard_hours?: string }) {
+    return ApiClient.updateLibrarySettings(data);
   }
 };
 

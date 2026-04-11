@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Copy, Check, Download } from 'lucide-react';
 import { Order } from '../../types';
+import { DB } from '../../utils/db';
 import { downloadFile } from '../../utils/fileStorage';
 
 export default function OrderConfirmed() {
@@ -9,17 +10,16 @@ export default function OrderConfirmed() {
   const location = useLocation();
   const order = (location.state as Record<string, unknown>)?.order as Order | undefined;
   const [copiedId, setCopiedId] = useState('');
-  const [shopInfo, setShopInfo] = useState<{ contact_number: string } | null>(null);
+  const [libraryInfo, setLibraryInfo] = useState<{ contact_number: string } | null>(null);
 
   useEffect(() => {
-    const fetchShop = async () => {
+    const fetchLibrary = async () => {
       try {
-        const res = await fetch('/api/rpc', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'getPublicShopInfo' }) });
-        const data = await res.json();
-        if (data.data) setShopInfo(data.data);
+        const data = await DB.getLibrarySettings();
+        if (data) setLibraryInfo(data);
       } catch (e) { console.error(e); }
     };
-    fetchShop();
+    fetchLibrary();
   }, []);
 
   if (!order) { navigate('/student/dashboard'); return null; }

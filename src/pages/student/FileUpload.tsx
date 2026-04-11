@@ -19,7 +19,7 @@ export default function FileUpload() {
   const [toast, setToast] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [pricing, setPricing] = useState(DB.getPricing());
-  const [shopSettings, setShopSettings] = useState<{is_open: boolean; closing_message: string; standard_hours: string}>({
+  const [librarySettings, setLibrarySettings] = useState<{is_open: boolean; closing_message: string; standard_hours: string}>({
     is_open: true, closing_message: '', standard_hours: '10:00 AM to 8:00 PM'
   });
 
@@ -32,11 +32,10 @@ export default function FileUpload() {
 
     const fetchSettings = async () => {
       try {
-        const res = await fetch('/api/rpc', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'getShopSettings' }) });
-        const { data } = await res.json();
-        if (data) setShopSettings(data);
+        const data = await DB.getLibrarySettings();
+        if (data) setLibrarySettings(data);
       } catch (e) {
-        console.error("Could not fetch shop settings", e);
+        console.error("Could not fetch library settings", e);
       }
     };
     fetchSettings();
@@ -50,7 +49,7 @@ export default function FileUpload() {
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
   const processFile = async (file: File) => {
-    if (!shopSettings.is_open) { showToast('Library Print is currently offline.'); return; }
+    if (!librarySettings.is_open) { showToast('Library Print is currently offline.'); return; }
     if (!isAllowedFile(file.name)) { showToast('Unsupported: ' + file.name); return; }
     if (file.size > 52428800) { showToast('File too large (max 50MB).'); return; }
     const key = generateStorageKey(file.name);
@@ -100,7 +99,7 @@ export default function FileUpload() {
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    if (!shopSettings.is_open) { showToast('Library Print is offline.'); return; }
+    if (!librarySettings.is_open) { showToast('Library Print is offline.'); return; }
     const files = Array.from(e.dataTransfer.files);
     if (files.length === 0) return;
     setIsUploading(true);
@@ -219,7 +218,7 @@ export default function FileUpload() {
               </div>
               <button
                 onClick={() => navigate('/student/payment', { state: { files: uploadedFiles, extras } })}
-                disabled={!canProceed || !shopSettings.is_open}
+                disabled={!canProceed || !librarySettings.is_open}
                 className="w-full py-5 rounded-2xl bg-blue-primary text-primary-foreground font-black text-lg hover:opacity-95 transition-all transform active:scale-95 disabled:opacity-40 shadow-xl shadow-blue-primary/20 flex items-center justify-center gap-2"
               >
                 PAY & SUBMIT TO LIBRARY →

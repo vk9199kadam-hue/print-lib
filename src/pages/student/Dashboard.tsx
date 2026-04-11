@@ -1,28 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Upload, Copy, Check, AlertCircle, Hash, Printer } from 'lucide-react';
+import { LogOut, Upload, Copy, Check, AlertCircle, Hash, Printer, BookOpen, Clock, User } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { DB } from '../../utils/db';
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
   const { currentUser, logout } = useAuth();
   const [copied, setCopied] = useState(false);
-  const [shopSettings, setShopSettings] = useState<{is_open: boolean; closing_message: string; standard_hours: string}>({
+  const [librarySettings, setLibrarySettings] = useState<{is_open: boolean; closing_message: string; standard_hours: string}>({
     is_open: true, closing_message: '', standard_hours: '10:00 AM to 8:00 PM'
   });
 
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const res = await fetch('/api/rpc', { 
-          method: 'POST', 
-          headers: { 'Content-Type': 'application/json' }, 
-          body: JSON.stringify({ action: 'getShopSettings' }) 
-        });
-        const { data: settingsData } = await res.json();
-        if (settingsData) setShopSettings(settingsData);
+        const settingsData = await DB.getLibrarySettings();
+        if (settingsData) setLibrarySettings(settingsData);
       } catch (e) {
-        console.error("Could not fetch shop settings", e);
+        console.error("Could not fetch library settings", e);
       }
     };
     loadSettings();
@@ -79,12 +75,12 @@ export default function StudentDashboard() {
 
         {/* Shop Status Visual */}
         <div className="animate-fade-in-up">
-          {!shopSettings.is_open ? (
+          {!librarySettings.is_open ? (
             <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-4 rounded-2xl text-center shadow-sm">
               <p className="font-bold flex items-center justify-center gap-2 text-sm">
                 <AlertCircle size={16} /> Library Printer is Currently Offline
               </p>
-              <p className="text-xs mt-1 opacity-90">{shopSettings.closing_message ? `Message: "${shopSettings.closing_message}"` : `Resumes at: ${shopSettings.standard_hours}`}</p>
+              <p className="text-xs mt-1 opacity-90">{librarySettings.closing_message ? `Message: "${librarySettings.closing_message}"` : `Resumes at: ${librarySettings.standard_hours}`}</p>
             </div>
           ) : (
             <div className="bg-green-500/10 border border-green-500/20 text-green-700 px-4 py-3 rounded-2xl text-center text-xs font-bold flex items-center justify-center gap-2 shadow-sm border-dashed">
@@ -96,7 +92,7 @@ export default function StudentDashboard() {
         {/* Main Action */}
         <div className="animate-fade-in-up">
           <button 
-            disabled={!shopSettings.is_open}
+            disabled={!librarySettings.is_open}
             onClick={() => navigate('/student/upload')} 
             className="w-full py-8 rounded-2xl bg-blue-primary text-primary-foreground font-black text-xl hover:opacity-95 transition flex flex-col items-center justify-center gap-4 shadow-2xl shadow-blue-primary/30 disabled:opacity-50 group border-b-4 border-blue-800 active:border-b-0 active:translate-y-1"
           >
@@ -110,6 +106,29 @@ export default function StudentDashboard() {
           </button>
         </div>
 
+        {/* Secondary Actions */}
+        <div className="grid grid-cols-2 gap-4 animate-fade-in-up">
+           <button 
+             onClick={() => navigate('/student/capstone')}
+             className="bg-card border border-input p-4 rounded-2xl flex flex-col items-center text-center gap-2 hover:bg-secondary transition shadow-sm group"
+           >
+              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl group-hover:scale-110 transition-transform">
+                 <BookOpen size={20} />
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-foreground">Capstone Project</span>
+           </button>
+           
+           <button 
+             onClick={() => navigate('/student/history')}
+             className="bg-card border border-input p-4 rounded-2xl flex flex-col items-center text-center gap-2 hover:bg-secondary transition shadow-sm group"
+           >
+              <div className="p-3 bg-blue-50 text-blue-primary rounded-xl group-hover:scale-110 transition-transform">
+                 <Clock size={20} />
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-foreground">Order History</span>
+           </button>
+        </div>
+
         {/* Info Text */}
         <div className="bg-white rounded-2xl p-5 border border-input shadow-sm space-y-3 animate-fade-in-up">
            <div className="flex items-start gap-3">
@@ -119,6 +138,16 @@ export default function StudentDashboard() {
               <div>
                  <p className="text-sm font-bold text-foreground">Self-Service Printing</p>
                  <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">Upload your documents above and pay online. Your prints will be ready at the librarian's desk.</p>
+              </div>
+           </div>
+           
+           <div className="flex items-start gap-3 pt-3 border-t border-gray-50">
+              <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
+                 <User size={18} />
+              </div>
+              <div>
+                 <p className="text-sm font-bold text-foreground">Profile & ID</p>
+                 <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">Keep your PRN handy for verification while collecting prints.</p>
               </div>
            </div>
         </div>

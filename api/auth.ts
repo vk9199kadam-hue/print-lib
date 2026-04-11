@@ -27,12 +27,12 @@ export default async function handler(req: any, res: any) {
 
     switch (action) {
       case 'health': {
-        const { error } = await db.from('shopkeepers').select('count', { count: 'exact', head: true });
+        const { error } = await db.from('librarians').select('count', { count: 'exact', head: true });
         return res.json({ status: 'ok', db: !error, error: error?.message });
       }
 
-      case 'verifyShopkeeper': {
-        const { data: users, error } = await db.from('shopkeepers').select('*').eq('email', payload.email);
+      case 'verifyLibrarian': {
+        const { data: users, error } = await db.from('librarians').select('*').eq('email', payload.email);
         if (error) throw error;
         if (!users || users.length === 0) return res.json({ data: null });
         
@@ -41,7 +41,7 @@ export default async function handler(req: any, res: any) {
         if (user.password === payload.password) {
            isValid = true;
            const newHash = await bcrypt.hash(payload.password, 10);
-           await db.from('shopkeepers').update({ password: newHash }).eq('id', user.id);
+           await db.from('librarians').update({ password: newHash }).eq('id', user.id);
         } else {
            isValid = await bcrypt.compare(payload.password, user.password);
         }
@@ -101,8 +101,8 @@ export default async function handler(req: any, res: any) {
         return res.json({ success: true });
       }
 
-      case 'getShopSettings': {
-        const { data, error } = await db.from('shop_settings').select('*').eq('id', 1).single();
+      case 'getLibrarySettings': {
+        const { data, error } = await db.from('library_settings').select('*').eq('id', 1).single();
         return res.json({ data: data || { is_open: true } });
       }
 
