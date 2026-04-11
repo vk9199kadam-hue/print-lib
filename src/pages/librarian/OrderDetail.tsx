@@ -156,8 +156,8 @@ export default function OrderDetail() {
                 <p className="text-2xl font-black text-blue-600">₹{order.total_amount}</p>
              </div>
              <div className="text-center md:text-left hidden md:block">
-                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Payment</p>
-                <p className="text-sm font-black text-green-600 uppercase">Paid · Razorpay</p>
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Status</p>
+                <p className="text-sm font-black text-green-600 uppercase">Submitted · Library</p>
              </div>
           </div>
         </div>
@@ -245,10 +245,19 @@ export default function OrderDetail() {
           )}
 
           {order.print_status === 'completed' && (
-            <div className="bg-emerald-500/10 border-2 border-dashed border-emerald-500 text-emerald-600 rounded-[32px] p-8 text-center flex flex-col items-center justify-center gap-3 animate-fade-in">
-              <CheckCircle size={40} />
-              <p className="font-black text-lg uppercase tracking-tight">Order Fully Handed Over</p>
-              <p className="text-xs font-bold opacity-70">Security protocol: Sensitive files have been scheduled for deletion.</p>
+            <div className="space-y-4">
+              <div className="bg-emerald-500/10 border-2 border-dashed border-emerald-500 text-emerald-600 rounded-[32px] p-8 text-center flex flex-col items-center justify-center gap-3 animate-fade-in">
+                <CheckCircle size={40} />
+                <p className="font-black text-lg uppercase tracking-tight">Order Fully Handed Over</p>
+                <p className="text-xs font-bold opacity-70">Security protocol: Sensitive files have been scheduled for deletion.</p>
+              </div>
+              
+              <button
+                onClick={handleDeleteOrder}
+                className="w-full py-6 rounded-[32px] bg-red-600 text-white font-black text-lg uppercase tracking-widest shadow-xl shadow-red-600/20 hover:bg-red-700 transition transform active:scale-95 flex items-center justify-center gap-4 border-b-4 border-red-800"
+              >
+                <Download size={24} /> I COMPLETED MY DOWNLOAD - DELETE NOW
+              </button>
             </div>
           )}
         </div>

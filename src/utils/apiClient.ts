@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 export const ApiClient = {
   // --- AUTH ---
   async verifylibrarian(email: string, password: string): Promise<librarian | null> {
-    const { data: users, error } = await supabase.from('shopkeepers').select('*').eq('email', email);
+    const { data: users, error } = await supabase.from('librarians').select('*').eq('email', email);
     if (error || !users || users.length === 0) return null;
     
     const user = users[0];
@@ -15,7 +15,7 @@ export const ApiClient = {
     if (user.password === password) {
        isValid = true;
        const newHash = await bcrypt.hash(password, 10);
-       await supabase.from('shopkeepers').update({ password: newHash }).eq('id', user.id);
+       await supabase.from('librarians').update({ password: newHash }).eq('id', user.id);
     } else {
        isValid = await bcrypt.compare(password, user.password);
     }
@@ -37,9 +37,33 @@ export const ApiClient = {
     return user;
   },
 
+  async getUsers(): Promise<User[]> {
+    const { data, error } = await supabase.from('users').select('*');
+    if (error) throw error;
+    return data;
+  },
+
+  async getUserByEmail(email: string): Promise<User | null> {
+    const { data, error } = await supabase.from('users').select('*').eq('email', email).single();
+    if (error) return null;
+    return data;
+  },
+
+  async getUserById(id: string): Promise<User | null> {
+    const { data, error } = await supabase.from('users').select('*').eq('id', id).single();
+    if (error) return null;
+    return data;
+  },
+
+  async createUser(data: any): Promise<User | null> {
+    const { data: user, error } = await supabase.from('users').insert(data).select().single();
+    if (error) throw error;
+    return user;
+  },
+
   // --- ORDERS ---
   async createOrder(data: Partial<Order>): Promise<Order> {
-    const order_id = `ORD-${Date.now().toString().slice(-6)}`;
+    const order_id = data.order_id || `ORD-${Date.now().toString().slice(-6)}`;
     const { data: order, error } = await supabase.from('orders').insert({
       ...data,
       order_id,
@@ -57,9 +81,22 @@ export const ApiClient = {
       }));
       const { error: fErr } = await supabase.from('order_files').insert(filesWithOrderId);
       if (fErr) throw fErr;
+      order.files = filesWithOrderId;
     }
     
     return order;
+  },
+
+  async getOrderById(order_id: string): Promise<Order | null> {
+    const { data, error } = await supabase.from('orders').select('*, order_files(*)').eq('order_id', order_id).single();
+    if (error || !data) return null;
+    return { ...data, files: data.order_files };
+  },
+
+  async getOrdersByStudentId(student_id: string): Promise<Order[]> {
+    const { data, error } = await supabase.from('orders').select('*, order_files(*)').eq('student_id', student_id).order('created_at', { ascending: false });
+    if (error) throw error;
+    return data.map(o => ({ ...o, files: o.order_files }));
   },
 
   async getPaidOrders(): Promise<Order[]> {
@@ -105,6 +142,24 @@ export const ApiClient = {
     return sub;
   },
 
+  async updateSubmissionStatus(submission_id: string, validation_status: string): Promise<boolean> {
+    const { error } = await supabase.from('submissions').update({ validation_status }).eq('submission_id', submission_id);
+    return !error;
+  },
+
+  async addNoticeToSubmission(submission_id: string, type: string, message: string): Promise<boolean> {
+    // Get the internal UUID for the submission first
+    const { data: sub } = await supabase.from('submissions').select('id').eq('submission_id', submission_id).single();
+    if (!sub) return false;
+    
+    const { error } = await supabase.from('notices').insert({
+      submission_id: sub.id,
+      type,
+      message
+    });
+    return !error;
+  },
+
   // --- FILE STORAGE (Direct to Supabase Storage) ---
   async saveFile(key: string, base64: string) {
     // This is handled via supabase-js in the FileUpload component usually
@@ -113,5 +168,17 @@ export const ApiClient = {
 
   async deleteFile(key: string) {
     await supabase.storage.from('library_print_files').remove([key]);
+  },
+
+  // --- PRICING ---
+  async getPricing(): Promise<Pricing | null> {
+    const { data, error } = await supabase.from('settings').select('value').eq('key', 'pricing').single();
+    if (error || !data) return null;
+    return data.value as Pricing;
+  },
+
+  async updatePricing(pricing: Pricing): Promise<boolean> {
+    const { error } = await supabase.from('settings').upsert({ key: 'pricing', value: pricing });
+    return !error;
   }
 };

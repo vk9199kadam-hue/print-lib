@@ -19,7 +19,7 @@ export default function Refund() {
           
           <h2 className="text-xl font-bold text-foreground mt-6 mb-2">Refund Processing</h2>
           <p>If there is an error on the prints (massive streaks, missing pages due to our system bug, or incorrect binding services despite being paid for) you can report it at the shop desk physically during pickup.</p>
-          <p>If an automatic refund is initiated due to a Gateway or processing failure, it may securely take 5-7 business days to reflect in your original payment method via Razorpay.</p>
+          <p>If an automatic refund is initiated due to a Gateway or processing failure, it may securely take 5-7 business days to reflect in your original payment method via the library billing system.</p>
         </div>
       </div>
     </div>

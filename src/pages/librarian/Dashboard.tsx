@@ -114,6 +114,9 @@ export default function LibrarianDashboard() {
             <div>
               <h1 className="text-3xl font-black text-foreground tracking-tight">Active Queue</h1>
               <p className="text-sm text-muted-foreground font-medium">Real-time incoming student print requests</p>
+              <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider mt-1 flex items-center gap-1">
+                 🔒 Privacy Mode: PRNs and Names are temporary and will be deleted after completion.
+              </p>
             </div>
             
             <div className="flex items-center gap-4 bg-white p-2 rounded-2xl shadow-sm border border-input">

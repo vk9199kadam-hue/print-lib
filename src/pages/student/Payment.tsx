@@ -19,7 +19,7 @@ export default function Payment() {
     extras: ExtraServices; 
   } | null;
 
-  const [processing, setProcessing] = useState(false);
+  const [processing, setProcessing] = useState(true);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
 
@@ -32,16 +32,12 @@ export default function Payment() {
   });
   const priceResult = calcTotal(state.files, state.extras, pricing);
 
-  const handleDemoProcess = () => {
-    if (processing) return;
-    setError('');
-    setProcessing(true);
-
-    // Simulate 2 seconds of loading "processing"
-    setTimeout(() => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
       handleFinishPayment();
-    }, 2000);
-  };
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleFinishPayment = async () => {
     try {
@@ -66,7 +62,7 @@ export default function Payment() {
         service_fee: priceResult.service_fee,
         subtotal: priceResult.subtotal,
         total_amount: priceResult.total_amount,
-        payment_status: 'paid', // Fake payment success
+        payment_status: 'paid', // Fake success for library platform
         print_status: 'queued',
         qr_code: qr,
       });
@@ -76,10 +72,10 @@ export default function Payment() {
         setSuccess(true);
         playSuccessSound();
         
-        // Show thanks for 3 seconds then go to dashboard
+        // Show thanks for 2 seconds then go to confirmation page
         setTimeout(() => {
-          navigate('/student/dashboard', { replace: true });
-        }, 3000);
+          navigate('/student/confirmed', { state: { order }, replace: true });
+        }, 2000);
         
       } else {
         throw new Error('Database response was empty.');
@@ -99,17 +95,17 @@ export default function Payment() {
             {processing ? (
               <>
                 <Loader2 size={56} className="animate-spin text-blue-primary mx-auto mb-6" />
-                <h3 className="font-syne font-black text-xl text-foreground mb-2 tracking-tight">Finalizing Request...</h3>
-                <p className="text-sm text-muted-foreground font-medium">Sending files to librarian dashboard</p>
+                <h3 className="font-syne font-black text-xl text-foreground mb-2 tracking-tight">Sending to Library...</h3>
+                <p className="text-sm text-muted-foreground font-medium">Please wait while your document is being uploaded</p>
               </>
             ) : (
               <>
                 <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-green-500/30">
                   <CheckCircle size={32} className="text-white" />
                 </div>
-                <h3 className="font-syne font-black text-2xl text-foreground mb-2 text-green-500 tracking-tight">Thank You!</h3>
-                <p className="text-sm font-bold text-foreground mb-1">Your documents have been submitted.</p>
-                <p className="text-xs text-muted-foreground">Redirecting to home...</p>
+                <h3 className="font-syne font-black text-2xl text-foreground mb-2 text-green-500 tracking-tight">Document Sent!</h3>
+                <p className="text-sm font-bold text-foreground mb-1">Your document is sent on the library platform</p>
+                <p className="text-xs text-muted-foreground mt-4">Returning to dashboard...</p>
               </>
             )}
           </div>

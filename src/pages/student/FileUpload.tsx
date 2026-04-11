@@ -222,7 +222,7 @@ export default function FileUpload() {
                 disabled={!canProceed || !shopSettings.is_open}
                 className="w-full py-5 rounded-2xl bg-blue-primary text-primary-foreground font-black text-lg hover:opacity-95 transition-all transform active:scale-95 disabled:opacity-40 shadow-xl shadow-blue-primary/20 flex items-center justify-center gap-2"
               >
-                SUBMIT TO LIBRARIAN →
+                PAY & SUBMIT TO LIBRARY →
               </button>
             </div>
           )}

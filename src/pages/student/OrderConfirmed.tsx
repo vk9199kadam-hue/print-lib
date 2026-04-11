@@ -60,7 +60,7 @@ export default function OrderConfirmed() {
             <path d="M25 42 L35 52 L55 30" fill="none" stroke="#10B981" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"
               strokeDasharray="50" className="animate-draw" style={{ animationDelay: '0.3s', strokeDashoffset: 50 }} />
           </svg>
-          <h1 className="font-syne font-bold text-2xl text-foreground animate-fade-in-up">Payment Successful! 🎉</h1>
+          <h1 className="font-syne font-bold text-2xl text-foreground animate-fade-in-up">Document Sent! 🎉</h1>
         </div>
 
         {/* ID cards */}
@@ -84,7 +84,7 @@ export default function OrderConfirmed() {
         {/* QR Code */}
         {order.qr_code && (
           <div className="bg-card rounded-2xl border border-input p-6 text-center">
-            <p className="text-sm text-muted-foreground mb-3">📱 Show this QR code at the shop counter</p>
+            <p className="text-sm text-muted-foreground mb-3">📱 Show this QR code at the library counter</p>
             <img src={order.qr_code} alt="QR Code" className="mx-auto w-48 h-48" />
             <button
               onClick={() => downloadFile(order.qr_code, `QR-${order.order_id}.png`)}
@@ -96,8 +96,8 @@ export default function OrderConfirmed() {
         )}
 
         <div className="bg-blue-50 rounded-[32px] p-8 text-center border-2 border-blue-600 shadow-lg shadow-blue-500/10 animate-fade-in-up">
-          <p className="text-blue-600 font-black text-xs uppercase tracking-widest mb-2">Print Queue Status</p>
-          <p className="text-2xl font-black text-slate-900 leading-tight">Your order is now in the library print queue! 🖨️</p>
+          <p className="text-blue-600 font-black text-xs uppercase tracking-widest mb-2">Library Print Queue</p>
+          <p className="text-2xl font-black text-slate-900 leading-tight">Your document is sent on the library platform! 🖨️</p>
           <p className="text-xs font-bold text-slate-500 mt-4 leading-relaxed">
             Please visit the Librarian's desk with your **Order ID** or **PRN** to collect your prints.
           </p>
