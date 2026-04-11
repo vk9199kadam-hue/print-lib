@@ -119,15 +119,15 @@ export const ApiClient = {
     return !error;
   },
 
-  // --- SHOP SETTINGS ---
+  // --- LIBRARY SETTINGS ---
   async getShopSettings(): Promise<any> {
-    const { data, error } = await supabase.from('shop_settings').select('*').eq('id', 1).single();
+    const { data, error } = await supabase.from('library_settings').select('*').eq('id', 1).single();
     if (error || !data) return { is_open: true };
     return data;
   },
 
   async updateShopSettings(data: any): Promise<boolean> {
-    const { error } = await supabase.from('shop_settings').update(data).eq('id', 1);
+    const { error } = await supabase.from('library_settings').update(data).eq('id', 1);
     return !error;
   },
 
