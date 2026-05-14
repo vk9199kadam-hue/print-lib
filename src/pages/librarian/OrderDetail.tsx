@@ -60,16 +60,16 @@ export default function OrderDetail() {
     try {
       const fileUrl = await DB.getFile(file.file_storage_key);
       if (fileUrl) {
-        const response = await fetch(fileUrl);
-        const blob = await response.blob();
-        const blobUrl = URL.createObjectURL(blob);
+        // Appending ?download= forces Supabase to send a Content-Disposition: attachment header.
+        const downloadUrl = fileUrl + '?download=' + encodeURIComponent(file.file_name);
+        
         const a = document.createElement('a');
-        a.href = blobUrl;
+        a.href = downloadUrl;
         a.download = file.file_name;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+
         setDownloadedFiles(prev => new Set(prev).add(file.file_storage_key));
       }
     } catch (e) {
