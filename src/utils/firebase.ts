@@ -6,12 +6,13 @@ import { getAuth } from 'firebase/auth';
 // Your web app's Firebase configuration
 // NOTE: Please replace these placeholder values with your actual Firebase Web App config
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "YOUR_API_KEY",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAQmkKhLyvi3vRIrLFF9C0XX51aD7VNjhY",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "librory-pp.firebaseapp.com",
-  projectId: "librory-pp",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "librory-pp.appspot.com",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "YOUR_SENDER_ID",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "YOUR_APP_ID"
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "librory-pp",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "librory-pp.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "544626907795",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:544626907795:web:549ad4f52da50abeb90b66",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-6XVECK6KCR"
 };
 
 // Initialize Firebase
