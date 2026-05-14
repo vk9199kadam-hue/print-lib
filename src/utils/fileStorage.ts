@@ -1,14 +1,25 @@
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from './firebase';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://hkuieoczwcioumzlmmvw.supabase.co';
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrdWllb2N6d2Npb3VtemxtbXZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MzE1MTMsImV4cCI6MjA5MTMwNzUxM30.hKDBkJrxwWqErFSpR5iTzo_P1BsqUuunQOigL4HiM3Y';
+export const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function uploadFileToCloud(file: File, key: string): Promise<string> {
   try {
-    const fileRef = ref(storage, key);
-    await uploadBytes(fileRef, file, {
-      cacheControl: 'public, max-age=3600'
-    });
-    const downloadUrl = await getDownloadURL(fileRef);
-    return downloadUrl;
+    const { data, error } = await supabase.storage
+      .from('documents')
+      .upload(key, file, {
+        cacheControl: '3600',
+        upsert: true
+      });
+
+    if (error) throw error;
+
+    const { data: publicUrlData } = supabase.storage
+      .from('documents')
+      .getPublicUrl(key);
+
+    return publicUrlData.publicUrl;
   } catch (error: any) {
     throw new Error('Cloud upload failed: ' + error.message);
   }
