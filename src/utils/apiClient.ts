@@ -78,7 +78,7 @@ export const ApiClient = {
       stapling: extra_services?.stapling || orderData.stapling || false
     };
     
-    const newOrder = {
+    const newOrder: any = {
       ...orderData,
       ...extras,
       order_id,
@@ -86,6 +86,13 @@ export const ApiClient = {
       print_status: orderData.print_status || 'queued',
       created_at: new Date().toISOString()
     };
+
+    // Firebase Firestore strictly forbids 'undefined' values.
+    Object.keys(newOrder).forEach(key => {
+      if (newOrder[key] === undefined) {
+        delete newOrder[key];
+      }
+    });
 
     const docRef = await addDoc(collection(db, 'orders'), newOrder);
     const order = { id: docRef.id, ...newOrder } as any;
