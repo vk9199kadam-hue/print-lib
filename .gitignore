@@ -23,3 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Firebase credentials and scripts
+firebase-service-account.json
+init-firebase-db.cjs

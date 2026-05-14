@@ -1,31 +1,17 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from './firebase';
 
 export async function uploadFileToCloud(file: File, key: string): Promise<string> {
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Supabase environment variables are missing.');
-  }
-
-  const { data, error } = await supabase.storage
-    .from('library_print_files')
-    .upload(key, file, {
-      cacheControl: '3600',
-      upsert: true
+  try {
+    const fileRef = ref(storage, key);
+    await uploadBytes(fileRef, file, {
+      cacheControl: 'public, max-age=3600'
     });
-
-  if (error) {
+    const downloadUrl = await getDownloadURL(fileRef);
+    return downloadUrl;
+  } catch (error: any) {
     throw new Error('Cloud upload failed: ' + error.message);
   }
-
-  const { data: publicUrlData } = supabase.storage
-    .from('library_print_files')
-    .getPublicUrl(key);
-
-  return publicUrlData.publicUrl;
 }
 
 export function downloadFile(url: string, filename: string): void {
