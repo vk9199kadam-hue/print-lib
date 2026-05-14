@@ -130,10 +130,11 @@ export const ApiClient = {
   },
 
   async getOrdersByStudentId(student_id: string): Promise<Order[]> {
-    const q = query(collection(db, 'orders'), where('student_id', '==', student_id), orderBy('created_at', 'desc'));
+    const q = query(collection(db, 'orders'), where('student_id', '==', student_id));
     const snapshot = await getDocs(q);
     
-    const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+    let orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+    orders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     
     for (const order of orders) {
       const filesQ = query(collection(db, 'order_files'), where('order_id', '==', order.id));
@@ -144,10 +145,11 @@ export const ApiClient = {
   },
 
   async getPaidOrders(): Promise<Order[]> {
-    const q = query(collection(db, 'orders'), where('payment_status', '==', 'paid'), orderBy('created_at', 'desc'));
+    const q = query(collection(db, 'orders'), where('payment_status', '==', 'paid'));
     const snapshot = await getDocs(q);
     
-    const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+    let orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+    orders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     
     for (const order of orders) {
       const filesQ = query(collection(db, 'order_files'), where('order_id', '==', order.id));
