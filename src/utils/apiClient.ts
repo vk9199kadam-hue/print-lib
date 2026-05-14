@@ -241,7 +241,7 @@ export const ApiClient = {
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrdWllb2N6d2Npb3VtemxtbXZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MzE1MTMsImV4cCI6MjA5MTMwNzUxM30.hKDBkJrxwWqErFSpR5iTzo_P1BsqUuunQOigL4HiM3Y';
       const supabase = createClient(supabaseUrl, supabaseKey);
       
-      const { data } = supabase.storage.from('documents').getPublicUrl(key);
+      const { data } = supabase.storage.from('library_print_files').getPublicUrl(key);
       return data.publicUrl;
     } catch {
       return null;
@@ -255,7 +255,7 @@ export const ApiClient = {
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrdWllb2N6d2Npb3VtemxtbXZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MzE1MTMsImV4cCI6MjA5MTMwNzUxM30.hKDBkJrxwWqErFSpR5iTzo_P1BsqUuunQOigL4HiM3Y';
       const supabase = createClient(supabaseUrl, supabaseKey);
       
-      await supabase.storage.from('documents').remove([key]);
+      await supabase.storage.from('library_print_files').remove([key]);
     } catch (e) {
       console.error('Error deleting file', e);
     }

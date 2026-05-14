@@ -7,7 +7,7 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 export async function uploadFileToCloud(file: File, key: string): Promise<string> {
   try {
     const { data, error } = await supabase.storage
-      .from('documents')
+      .from('library_print_files')
       .upload(key, file, {
         cacheControl: '3600',
         upsert: true
@@ -16,7 +16,7 @@ export async function uploadFileToCloud(file: File, key: string): Promise<string
     if (error) throw error;
 
     const { data: publicUrlData } = supabase.storage
-      .from('documents')
+      .from('library_print_files')
       .getPublicUrl(key);
 
     return publicUrlData.publicUrl;
