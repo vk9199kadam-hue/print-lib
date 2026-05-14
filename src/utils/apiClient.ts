@@ -1,26 +1,21 @@
 import { User, librarian, Order, Pricing, Session, Submission, Notice } from '../types';
-import { db, storage } from './firebase';
-import { collection, doc, getDoc, getDocs, query, where, addDoc, setDoc, updateDoc, deleteDoc, orderBy } from 'firebase/firestore';
-import { ref, getDownloadURL, deleteObject } from 'firebase/storage';
+import { supabase } from './supabase';
 import bcrypt from 'bcryptjs';
 
 export const ApiClient = {
   // --- AUTH ---
   async verifylibrarian(email: string, password: string): Promise<librarian | null> {
-    const q = query(collection(db, 'librarians'), where('email', '==', email));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return null;
+    const { data: users, error } = await supabase.from('librarians').select('*').eq('email', email);
+    if (error || !users || users.length === 0) return null;
     
-    const docSnap = snapshot.docs[0];
-    const user = { id: docSnap.id, ...docSnap.data() } as any;
-    
+    const user = users[0];
     let isValid = false;
     
     // Check if password is plain text (migration) or hashed
     if (user.password === password) {
        isValid = true;
        const newHash = await bcrypt.hash(password, 10);
-       await updateDoc(docSnap.ref, { password: newHash });
+       await supabase.from('librarians').update({ password: newHash }).eq('id', user.id);
     } else {
        isValid = await bcrypt.compare(password, user.password);
     }
@@ -31,13 +26,10 @@ export const ApiClient = {
   },
 
   async verifyStudent(email: string, password: string): Promise<User | null> {
-    const q = query(collection(db, 'users'), where('email', '==', email));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return null;
+    const { data: users, error } = await supabase.from('users').select('*').eq('email', email);
+    if (error || !users || users.length === 0) return null;
     
-    const docSnap = snapshot.docs[0];
-    const user = { id: docSnap.id, ...docSnap.data() } as any;
-    
+    const user = users[0];
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) return null;
     
@@ -46,26 +38,27 @@ export const ApiClient = {
   },
 
   async getUsers(): Promise<User[]> {
-    const snapshot = await getDocs(collection(db, 'users'));
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+    const { data, error } = await supabase.from('users').select('*');
+    if (error) throw error;
+    return data;
   },
 
   async getUserByEmail(email: string): Promise<User | null> {
-    const q = query(collection(db, 'users'), where('email', '==', email));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return null;
-    return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as any;
+    const { data, error } = await supabase.from('users').select('*').eq('email', email).single();
+    if (error) return null;
+    return data;
   },
 
   async getUserById(id: string): Promise<User | null> {
-    const docSnap = await getDoc(doc(db, 'users', id));
-    if (!docSnap.exists()) return null;
-    return { id: docSnap.id, ...docSnap.data() } as any;
+    const { data, error } = await supabase.from('users').select('*').eq('id', id).single();
+    if (error) return null;
+    return data;
   },
 
   async createUser(data: any): Promise<User | null> {
-    const docRef = await addDoc(collection(db, 'users'), data);
-    return { id: docRef.id, ...data } as any;
+    const { data: user, error } = await supabase.from('users').insert(data).select().single();
+    if (error) throw error;
+    return user;
   },
 
   // --- ORDERS ---
@@ -73,41 +66,43 @@ export const ApiClient = {
     const { files, extra_services, ...orderData } = data;
     const order_id = orderData.order_id || `ORD-${Date.now().toString().slice(-6)}`;
     
+    // Map extra_services to columns if they exist as an object
     const extras = {
       spiral_binding: extra_services?.spiral_binding || orderData.spiral_binding || false,
       stapling: extra_services?.stapling || orderData.stapling || false
     };
     
-    const newOrder: any = {
+    const { data: order, error } = await supabase.from('orders').insert({
       ...orderData,
       ...extras,
       order_id,
       payment_status: orderData.payment_status || 'paid',
-      print_status: orderData.print_status || 'queued',
-      created_at: new Date().toISOString()
-    };
-
-    // Firebase Firestore strictly forbids 'undefined' values.
-    Object.keys(newOrder).forEach(key => {
-      if (newOrder[key] === undefined) {
-        delete newOrder[key];
-      }
-    });
-
-    const docRef = await addDoc(collection(db, 'orders'), newOrder);
-    const order = { id: docRef.id, ...newOrder } as any;
+      print_status: orderData.print_status || 'queued'
+    }).select().single();
+    
+    if (error) throw error;
     
     if (files && files.length > 0) {
       const filesWithOrderId = files.map(f => ({
-        ...f,
         order_id: order.id,
-        paper_size: f.paper_size || 'A4'
+        file_name: f.file_name,
+        file_storage_key: f.file_storage_key,
+        file_type: f.file_type,
+        file_extension: f.file_extension,
+        page_count: f.page_count,
+        print_type: f.print_type,
+        color_page_ranges: f.color_page_ranges,
+        copies: f.copies,
+        sides: f.sides,
+        bw_pages: f.bw_pages,
+        color_pages: f.color_pages,
+        file_price: f.file_price,
+        student_note: f.student_note,
+        paper_size: f.paper_size || 'A4',
+        file_size_kb: f.file_size_kb
       }));
-      
-      const filesCollection = collection(db, 'order_files');
-      for (const file of filesWithOrderId) {
-        await addDoc(filesCollection, file);
-      }
+      const { error: fErr } = await supabase.from('order_files').insert(filesWithOrderId);
+      if (fErr) throw fErr;
       order.files = filesWithOrderId;
     }
     
@@ -115,179 +110,109 @@ export const ApiClient = {
   },
 
   async getOrderById(order_id: string): Promise<Order | null> {
-    const q = query(collection(db, 'orders'), where('order_id', '==', order_id));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return null;
-    
-    const orderDoc = snapshot.docs[0];
-    const order = { id: orderDoc.id, ...orderDoc.data() } as any;
-    
-    const filesQ = query(collection(db, 'order_files'), where('order_id', '==', order.id));
-    const filesSnapshot = await getDocs(filesQ);
-    order.files = filesSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    
-    return order;
+    const { data, error } = await supabase.from('orders').select('*, order_files(*)').eq('order_id', order_id).single();
+    if (error || !data) return null;
+    return { ...data, files: data.order_files };
   },
 
   async getOrdersByStudentId(student_id: string): Promise<Order[]> {
-    const q = query(collection(db, 'orders'), where('student_id', '==', student_id));
-    const snapshot = await getDocs(q);
-    
-    let orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
-    orders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    
-    for (const order of orders) {
-      const filesQ = query(collection(db, 'order_files'), where('order_id', '==', order.id));
-      const filesSnapshot = await getDocs(filesQ);
-      order.files = filesSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    }
-    return orders;
+    const { data, error } = await supabase.from('orders').select('*, order_files(*)').eq('student_id', student_id).order('created_at', { ascending: false });
+    if (error) throw error;
+    return data.map(o => ({ ...o, files: o.order_files }));
   },
 
   async getPaidOrders(): Promise<Order[]> {
-    const q = query(collection(db, 'orders'), where('payment_status', '==', 'paid'));
-    const snapshot = await getDocs(q);
-    
-    let orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
-    orders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    
-    for (const order of orders) {
-      const filesQ = query(collection(db, 'order_files'), where('order_id', '==', order.id));
-      const filesSnapshot = await getDocs(filesQ);
-      order.files = filesSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    }
-    return orders;
+    const { data, error } = await supabase.from('orders').select('*, order_files(*)').eq('payment_status', 'paid').order('created_at', { ascending: false });
+    if (error) throw error;
+    return data.map(o => ({ ...o, files: o.order_files }));
   },
 
   async updateOrderStatus(order_id: string, print_status: string): Promise<boolean> {
-    const q = query(collection(db, 'orders'), where('order_id', '==', order_id));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return false;
-    
-    await updateDoc(snapshot.docs[0].ref, { print_status });
-    return true;
+    const { error } = await supabase.from('orders').update({ print_status }).eq('order_id', order_id);
+    return !error;
   },
 
   async deleteOrder(id: string): Promise<boolean> {
-    try {
-      await deleteDoc(doc(db, 'orders', id));
-      
-      const filesQ = query(collection(db, 'order_files'), where('order_id', '==', id));
-      const filesSnapshot = await getDocs(filesQ);
-      for (const fileDoc of filesSnapshot.docs) {
-        await deleteDoc(fileDoc.ref);
-      }
-      return true;
-    } catch {
-      return false;
-    }
+    // Delete order files first (on cascade would handle this but being explicit is safer)
+    await supabase.from('order_files').delete().eq('order_id', id);
+    const { error } = await supabase.from('orders').delete().eq('id', id);
+    return !error;
   },
 
   // --- LIBRARY SETTINGS ---
   async getLibrarySettings(): Promise<any> {
-    const docSnap = await getDoc(doc(db, 'settings', 'library_settings'));
-    if (!docSnap.exists()) return { is_open: true };
-    return docSnap.data();
+    const { data, error } = await supabase.from('library_settings').select('*').eq('id', 1).single();
+    if (error || !data) return { is_open: true };
+    return data;
   },
 
   async updateLibrarySettings(data: any): Promise<boolean> {
-    try {
-      await setDoc(doc(db, 'settings', 'library_settings'), data, { merge: true });
-      return true;
-    } catch {
-      return false;
-    }
+    const { error } = await supabase.from('library_settings').update(data).eq('id', 1);
+    return !error;
   },
 
   // --- SUBMISSIONS ---
   async getSubmissions(): Promise<Submission[]> {
-    const q = query(collection(db, 'submissions'), orderBy('created_at', 'desc'));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+    const { data, error } = await supabase.from('submissions').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    return data;
   },
 
   async createSubmission(data: Partial<Submission>): Promise<Submission> {
-    const docRef = await addDoc(collection(db, 'submissions'), {
-      ...data,
-      created_at: new Date().toISOString()
-    });
-    return { id: docRef.id, ...data } as any;
+    const { data: sub, error } = await supabase.from('submissions').insert(data).select().single();
+    if (error) throw error;
+    return sub;
   },
 
   async updateSubmissionStatus(submission_id: string, validation_status: string): Promise<boolean> {
-    const q = query(collection(db, 'submissions'), where('submission_id', '==', submission_id));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return false;
-    
-    await updateDoc(snapshot.docs[0].ref, { validation_status });
-    return true;
+    const { error } = await supabase.from('submissions').update({ validation_status }).eq('submission_id', submission_id);
+    return !error;
   },
 
   async addNoticeToSubmission(submission_id: string, type: string, message: string): Promise<boolean> {
-    const q = query(collection(db, 'submissions'), where('submission_id', '==', submission_id));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return false;
+    // Get the internal UUID for the submission first
+    const { data: sub } = await supabase.from('submissions').select('id').eq('submission_id', submission_id).single();
+    if (!sub) return false;
     
-    const subId = snapshot.docs[0].id;
-    await addDoc(collection(db, 'notices'), {
-      submission_id: subId,
+    const { error } = await supabase.from('notices').insert({
+      submission_id: sub.id,
       type,
-      message,
-      created_at: new Date().toISOString()
+      message
     });
-    return true;
+    return !error;
   },
 
   // --- FILE STORAGE (Direct to Supabase Storage) ---
   async saveFile(key: string, base64: string) {
+    // This is handled via supabase-js in the FileUpload component usually
     console.log('File saving is handled via storage component');
   },
 
   async getFile(key: string): Promise<string | null> {
-    try {
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://hkuieoczwcioumzlmmvw.supabase.co';
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrdWllb2N6d2Npb3VtemxtbXZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MzE1MTMsImV4cCI6MjA5MTMwNzUxM30.hKDBkJrxwWqErFSpR5iTzo_P1BsqUuunQOigL4HiM3Y';
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      
-      const { data } = supabase.storage.from('library_print_files').getPublicUrl(key);
-      return data.publicUrl;
-    } catch {
-      return null;
-    }
+    const { data } = supabase.storage.from('library_print_files').getPublicUrl(key);
+    return data?.publicUrl || null;
   },
 
   async deleteFile(key: string) {
-    try {
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://hkuieoczwcioumzlmmvw.supabase.co';
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrdWllb2N6d2Npb3VtemxtbXZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MzE1MTMsImV4cCI6MjA5MTMwNzUxM30.hKDBkJrxwWqErFSpR5iTzo_P1BsqUuunQOigL4HiM3Y';
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      
-      await supabase.storage.from('library_print_files').remove([key]);
-    } catch (e) {
-      console.error('Error deleting file', e);
-    }
+    await supabase.storage.from('library_print_files').remove([key]);
   },
 
   async cleanOrphanedFiles(): Promise<boolean> {
+    // Currently returns a success boolean to fulfill the DB interface.
+    // In production, this would cross-reference storage keys with active database rows.
     console.log('Storage cleanup initiated.');
     return true;
   },
 
   // --- PRICING ---
   async getPricing(): Promise<Pricing | null> {
-    const docSnap = await getDoc(doc(db, 'settings', 'pricing'));
-    if (!docSnap.exists()) return null;
-    return docSnap.data() as Pricing;
+    const { data, error } = await supabase.from('settings').select('value').eq('key', 'pricing').single();
+    if (error || !data) return null;
+    return data.value as Pricing;
   },
 
   async updatePricing(pricing: Pricing): Promise<boolean> {
-    try {
-      await setDoc(doc(db, 'settings', 'pricing'), pricing);
-      return true;
-    } catch {
-      return false;
-    }
+    const { error } = await supabase.from('settings').upsert({ key: 'pricing', value: pricing });
+    return !error;
   }
 };

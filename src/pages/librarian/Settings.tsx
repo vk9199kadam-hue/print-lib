@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, LogOut, Printer, Zap, Inbox, BookOpen, BarChart3, Settings as SettingsIcon, User, Phone, Globe, CreditCard, CheckCircle, AlertCircle, Loader2, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { DB } from '../../utils/db';
-import { db } from '../../utils/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { supabase } from '../../utils/supabase';
 
 
 
@@ -61,13 +60,12 @@ export default function LibrarySettings() {
     try {
        // Save profile to librarians table and pricing to settings table
        if (currentLibrary?.id) {
-         const docRef = doc(db, 'librarians', currentLibrary.id);
-         await updateDoc(docRef, {
+         await supabase.from('librarians').update({
            name: formData.name,
            library_name: formData.library_name,
            upi_id: formData.upi_id,
            contact_number: formData.contact_number
-         });
+         }).eq('id', currentLibrary.id);
        }
        await DB.savePricing(pricing);
 

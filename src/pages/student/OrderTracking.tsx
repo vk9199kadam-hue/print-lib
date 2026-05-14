@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, Navigate } from 'react-router-dom';
 import { ArrowLeft, Upload, CreditCard, Clock, Printer, Bell, CheckCircle, Loader2, Download as DownloadIcon } from 'lucide-react';
 import { DB } from '../../utils/db';
-import { db } from '../../utils/firebase';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { supabase } from '../../utils/fileStorage';
 import { Order, FileItem } from '../../types';
 import { playReadySound } from '../../utils/sound';
 import FileTypeIcon from '../../components/FileTypeIcon';
@@ -66,14 +65,19 @@ export default function OrderTracking() {
 
     load();
     
-    const q = query(collection(db, 'orders'), where('order_id', '==', order_id));
-    const unsubscribe = onSnapshot(q, () => {
-      load();
-    });
+    // Subscribe to WebSockets for instant, read-free updates
+    const channel = supabase
+      .channel(`order_updates_${order_id}`)
+      .on(
+        'postgres_changes', 
+        { event: 'UPDATE', schema: 'public', table: 'orders', filter: `order_id=eq.${order_id}` }, 
+        () => { load(); }
+      )
+      .subscribe();
 
     return () => {
       isMounted = false;
-      unsubscribe();
+      supabase.removeChannel(channel);
     };
   }, [order_id, retryCount]);
 
