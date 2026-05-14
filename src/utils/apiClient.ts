@@ -229,20 +229,15 @@ export const ApiClient = {
     return true;
   },
 
-  // --- FILE STORAGE (Direct to Supabase Storage) ---
+  // --- FILE STORAGE (Direct to Firebase Storage) ---
   async saveFile(key: string, base64: string) {
     console.log('File saving is handled via storage component');
   },
 
   async getFile(key: string): Promise<string | null> {
     try {
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://hkuieoczwcioumzlmmvw.supabase.co';
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrdWllb2N6d2Npb3VtemxtbXZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MzE1MTMsImV4cCI6MjA5MTMwNzUxM30.hKDBkJrxwWqErFSpR5iTzo_P1BsqUuunQOigL4HiM3Y';
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      
-      const { data } = supabase.storage.from('library_print_files').getPublicUrl(key);
-      return data.publicUrl;
+      const fileRef = ref(storage, key);
+      return await getDownloadURL(fileRef);
     } catch {
       return null;
     }
@@ -250,12 +245,8 @@ export const ApiClient = {
 
   async deleteFile(key: string) {
     try {
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://hkuieoczwcioumzlmmvw.supabase.co';
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrdWllb2N6d2Npb3VtemxtbXZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MzE1MTMsImV4cCI6MjA5MTMwNzUxM30.hKDBkJrxwWqErFSpR5iTzo_P1BsqUuunQOigL4HiM3Y';
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      
-      await supabase.storage.from('library_print_files').remove([key]);
+      const fileRef = ref(storage, key);
+      await deleteObject(fileRef);
     } catch (e) {
       console.error('Error deleting file', e);
     }
