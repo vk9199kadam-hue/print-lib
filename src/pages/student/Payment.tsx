@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -55,10 +54,12 @@ export default function Payment() {
     return calcTotal(state.files, state.extras, pricing, state.isCapstone);
   }, [state?.files, state?.extras, pricing, state?.isCapstone]);
 
+  const handleFinishPaymentRef = useRef<() => Promise<void>>();
+
   useEffect(() => {
     if (redirecting) return;
     const timer = setTimeout(() => {
-      handleFinishPayment();
+      handleFinishPaymentRef.current?.();
     }, 1500);
     return () => clearTimeout(timer);
   }, [redirecting]);
@@ -121,6 +122,8 @@ export default function Payment() {
       setError(e instanceof Error ? e.message : 'System error. Please try again.');
     }
   };
+
+  handleFinishPaymentRef.current = handleFinishPayment;
 
   return (
     <div className="min-h-screen bg-secondary">

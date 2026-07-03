@@ -4,7 +4,7 @@ import { ArrowLeft, CloudUpload, X, Minus, Plus, AlertCircle, Loader2, Printer, 
 import { FileItem, ExtraServices } from '../../types';
 import { DB } from '../../utils/db';
 import { getFileType, isAllowedFile, getPageCount } from '../../utils/pageCounter';
-import { uploadFileToCloud, formatFileSize, generateStorageKey, supabase } from '../../utils/fileStorage';
+import { uploadFileToCloud, formatFileSize, generateStorageKey, deleteFileFromCloud } from '../../utils/fileStorage';
 
 import { calcTotal } from '../../utils/priceCalculator';
 import FileTypeIcon from '../../components/FileTypeIcon';
@@ -87,7 +87,7 @@ export default function FileUpload() {
   const removeFile = async (temp_id: string) => {
     const file = uploadedFiles.find(f => f.temp_id === temp_id);
     if (file) {
-      await supabase.storage.from('library_print_files').remove([file.file_storage_key]);
+      await deleteFileFromCloud(file.file_storage_key);
     }
     setUploadedFiles(prev => prev.filter(f => f.temp_id !== temp_id));
   };

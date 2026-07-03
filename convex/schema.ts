@@ -9,6 +9,8 @@ export default defineSchema({
     password: v.string(),
     library_name: v.string(),
     is_active: v.boolean(),
+    upi_id: v.optional(v.string()),
+    contact_number: v.optional(v.string()),
     created_at: v.number(), // Timestamp in milliseconds
   })
     .index("by_email", ["email"])
@@ -112,6 +114,20 @@ export default defineSchema({
     key: v.string(),
     file_data: v.optional(v.string()),
     created_at: v.number(), // Timestamp in milliseconds
+  })
+    .index("by_key", ["key"]),
+
+  // Library Settings table
+  library_settings: defineTable({
+    is_open: v.boolean(),
+    closing_message: v.optional(v.string()),
+    standard_hours: v.optional(v.string()),
+  }),
+
+  // Settings table (General config like pricing)
+  settings: defineTable({
+    key: v.string(),
+    value: v.any(),
   })
     .index("by_key", ["key"]),
 });

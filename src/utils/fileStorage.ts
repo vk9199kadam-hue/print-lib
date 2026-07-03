@@ -1,31 +1,36 @@
-import { createClient } from '@supabase/supabase-js';
+import { ConvexReactClient } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const convexUrl = import.meta.env.VITE_CONVEX_URL || 'https://placeholder.convex.cloud';
+const convex = new ConvexReactClient(convexUrl);
 
 export async function uploadFileToCloud(file: File, key: string): Promise<string> {
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Supabase environment variables are missing.');
+  if (!convexUrl) {
+    throw new Error('Convex environment variable VITE_CONVEX_URL is missing.');
   }
 
-  const { data, error } = await supabase.storage
-    .from('library_print_files')
-    .upload(key, file, {
-      cacheControl: '3600',
-      upsert: true
-    });
+  // 1. Generate secure upload URL in Convex
+  const uploadUrl = await convex.mutation(api.files.generateUploadUrl, {});
 
-  if (error) {
-    throw new Error('Cloud upload failed: ' + error.message);
+  // 2. Upload raw file to Convex storage
+  const response = await fetch(uploadUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': file.type },
+    body: file,
+  });
+
+  if (!response.ok) {
+    throw new Error('Cloud upload failed: ' + response.statusText);
   }
 
-  const { data: publicUrlData } = supabase.storage
-    .from('library_print_files')
-    .getPublicUrl(key);
+  // 3. Extract the unique Convex storage ID
+  const { storageId } = await response.json();
+  return storageId;
+}
 
-  return publicUrlData.publicUrl;
+export async function deleteFileFromCloud(storageId: string): Promise<void> {
+  if (!convexUrl) return;
+  await convex.mutation(api.files.deleteFile, { storageId });
 }
 
 export async function downloadFile(url: string, filename: string): Promise<void> {

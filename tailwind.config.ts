@@ -18,9 +18,9 @@ export default {
         mono: ["JetBrains Mono", "monospace"],
       },
       colors: {
-        "blue-dark": "#0A1628",
-        "blue-primary": "#1B4FFF",
-        "blue-light": "#EEF2FF",
+        "blue-dark": "#36164A",
+        "blue-primary": "#4E2269",
+        "blue-light": "#F5F2F8",
         "green-dark": "#061A0F",
         "green-primary": "#0D6B3E",
         "green-light": "#ECFDF5",

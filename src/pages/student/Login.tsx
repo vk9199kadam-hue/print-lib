@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, Hash, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { User as StudentUser } from '../../types';
 
 export default function StudentLogin() {
   const navigate = useNavigate();
@@ -31,15 +32,17 @@ export default function StudentLogin() {
     await new Promise(r => setTimeout(r, 600));
     
     // Create a mock student user object for the session
-    const studentUser = {
+    const studentUser: StudentUser = {
       id: 'student_' + prn,
       name: name,
       email: prn + '@rit.edu', // Dummy email for compatibility
       student_print_id: prn,
-      is_verified: true
+      is_verified: true,
+      gender: 'Other',
+      created_at: new Date().toISOString()
     };
     
-    login(studentUser as any, 'student');
+    login(studentUser, 'student');
     navigate('/student/dashboard', { replace: true });
     setLoading(false);
   };

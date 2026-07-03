@@ -34,6 +34,9 @@ export const DB = {
   async verifylibrarian(email: string, password: string): Promise<librarian | null> {
     return ApiClient.verifylibrarian(email, password);
   },
+  async updateLibrarianProfile(id: string, data: { name: string; library_name: string; upi_id?: string; contact_number?: string }): Promise<boolean> {
+    return ApiClient.updateLibrarianProfile(id, data);
+  },
   async getOrders(): Promise<Order[]> {
     return []; // Not used directly in UI usually
   },

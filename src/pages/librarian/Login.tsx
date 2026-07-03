@@ -32,7 +32,7 @@ export default function LibrarianLogin() {
       const user = await ApiClient.verifylibrarian(username.trim(), password);
       
       if (user) {
-        login(user as any, 'librarian');
+        login(user, 'librarian');
         navigate('/librarian/dashboard', { replace: true });
       } else {
         setError('Invalid email or password');
