@@ -28,3 +28,4 @@ convex/_generated/
 *.sln
 *.sw?
 .vercel
+.env*
