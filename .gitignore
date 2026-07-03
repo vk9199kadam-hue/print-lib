@@ -15,8 +15,6 @@ dist-ssr
 .agents/
 .claude/
 .convex/
-convex/_generated/
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
