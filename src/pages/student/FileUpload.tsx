@@ -61,7 +61,7 @@ export default function FileUpload() {
       const item: FileItem & { size?: number } = {
         temp_id: 'tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2),
         file_name: file.name,
-        file_storage_key: key,
+        file_storage_key: publicUrl,
         file_type: fileType,
         file_extension: ext,
         page_count: pageCount || 0,

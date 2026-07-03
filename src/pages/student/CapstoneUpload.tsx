@@ -46,7 +46,7 @@ export default function CapstoneUpload() {
       const item: FileItem = {
         temp_id: 'tmp_' + Date.now(),
         file_name: file.name,
-        file_storage_key: key,
+        file_storage_key: publicUrl,
         file_type: fileType,
         file_extension: file.name.split('.').pop() || '',
         page_count: pageCount || 0,
