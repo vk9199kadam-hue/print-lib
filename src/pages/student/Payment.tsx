@@ -172,7 +172,7 @@ export default function Payment() {
                   <p className="text-sm font-bold text-foreground truncate">{f.file_name}</p>
                   <div className="flex flex-wrap gap-1.5 mt-1">
                      <span className="text-[9px] uppercase font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">{f.print_type === 'color' ? 'Color' : 'B&W'}</span>
-                     <span className="text-[9px] uppercase font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">{f.sides === 'double' ? 'Front & Back' : 'Single Sided'}</span>
+                     <span className="text-[9px] uppercase font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">{f.sides === 'double' ? 'Front & Back' : 'Single Sided'}</span>
                      <span className="text-[9px] uppercase font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{f.page_count || 1} Pgs</span>
                      <span className="text-[9px] uppercase font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">×{f.copies} Copies</span>
                   </div>

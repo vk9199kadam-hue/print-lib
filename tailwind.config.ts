@@ -18,6 +18,18 @@ export default {
         mono: ["JetBrains Mono", "monospace"],
       },
       colors: {
+        blue: {
+          50: "#F5F2F8",   // Light Purple (RIT background accent)
+          100: "#EBE5F2",  
+          200: "#D7CCE6",
+          300: "#BFAAD4",
+          400: "#9C7CB7",
+          500: "#4569BC",   // Royal Blue (RIT Secondary/Sidebar)
+          600: "#4E2269",   // Deep Purple (RIT Primary/Headers)
+          700: "#3E1B54",   // Dark Purple (RIT hover state)
+          800: "#2E143E",
+          900: "#1E0E2A",
+        },
         "blue-dark": "#36164A",
         "blue-primary": "#4E2269",
         "blue-light": "#F5F2F8",
