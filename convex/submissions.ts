@@ -68,7 +68,7 @@ export const updateSubmissionStatus = mutation({
     const sub = await ctx.db
       .query("submissions")
       .withIndex("by_submission_id", (q) => q.eq("submission_id", args.submission_id))
-      .unique();
+      .first();
     if (!sub) return false;
     
     await ctx.db.patch(sub._id, { validation_status: args.validation_status });
@@ -83,7 +83,7 @@ export const addNoticeToSubmission = mutation({
     const sub = await ctx.db
       .query("submissions")
       .withIndex("by_submission_id", (q) => q.eq("submission_id", args.submission_id))
-      .unique();
+      .first();
     if (!sub) return false;
     
     await ctx.db.insert("notices", {

@@ -20,7 +20,7 @@ export const getLibrarianByEmailInternal = internalQuery({
     return await ctx.db
       .query("librarians")
       .withIndex("by_email", (q) => q.eq("email", args.email))
-      .unique();
+      .first();
   },
 });
 

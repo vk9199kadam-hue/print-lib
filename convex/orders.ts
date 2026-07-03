@@ -71,7 +71,7 @@ export const getOrderById = query({
     const order = await ctx.db
       .query("orders")
       .withIndex("by_order_id", (q) => q.eq("order_id", args.order_id))
-      .unique();
+      .first();
     if (!order) return null;
     
     const files = await ctx.db
@@ -136,7 +136,7 @@ export const updateOrderStatus = mutation({
     const order = await ctx.db
       .query("orders")
       .withIndex("by_order_id", (q) => q.eq("order_id", args.order_id))
-      .unique();
+      .first();
     if (!order) return false;
     
     await ctx.db.patch(order._id, { print_status: args.print_status });

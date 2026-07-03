@@ -16,7 +16,7 @@ export const getUserByEmail = query({
     return await ctx.db
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", args.email))
-      .unique();
+      .first();
   },
 });
 
@@ -47,7 +47,7 @@ export const createUser = mutation({
     const existing = await ctx.db
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", args.email))
-      .unique();
+      .first();
     if (existing) {
       return existing;
     }
