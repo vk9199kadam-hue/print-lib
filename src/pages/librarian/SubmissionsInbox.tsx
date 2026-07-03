@@ -4,6 +4,7 @@ import { Printer, BarChart3, LogOut, Search, Clock, Inbox, FileText, CheckCircle
 import { useAuth } from '../../context/AuthContext';
 import { DB } from '../../utils/db';
 import { Submission, NoticeType } from '../../types';
+import { downloadFile } from '../../utils/fileStorage';
 
 function timeAgo(date: string) {
   const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
@@ -58,13 +59,11 @@ export default function SubmissionsInbox() {
   const downloadDoc = async (key: string, name: string) => {
     try {
       const fileUrl = await DB.getFile(key);
-      if (!fileUrl) return alert('File missing in storage');
-      
-      const a = document.createElement('a');
-      a.href = fileUrl;
-      a.target = '_blank';
-      a.download = name;
-      a.click();
+      if (fileUrl) {
+        await downloadFile(fileUrl, name);
+      } else {
+        alert('File not found in storage. (Seed/Mock files are not downloadable; please test with a new upload).');
+      }
     } catch (e) {
       console.error(e);
       alert('Failed to securely access file');

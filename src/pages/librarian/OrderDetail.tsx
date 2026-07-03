@@ -3,6 +3,7 @@ import { useNavigate, useParams, Navigate } from 'react-router-dom';
 import { ArrowLeft, Printer, CheckCircle, Package, Loader2, Download, MessageSquare, User, Library, Hash } from 'lucide-react';
 import { DB } from '../../utils/db';
 import { Order, FileItem } from '../../types';
+import { downloadFile } from '../../utils/fileStorage';
 import StatusBadge from '../../components/StatusBadge';
 import FileTypeIcon from '../../components/FileTypeIcon';
 
@@ -60,17 +61,10 @@ export default function OrderDetail() {
     try {
       const fileUrl = await DB.getFile(file.file_storage_key);
       if (fileUrl) {
-        // Appending ?download= forces Supabase to send a Content-Disposition: attachment header.
-        const downloadUrl = fileUrl + '?download=' + encodeURIComponent(file.file_name);
-        
-        const a = document.createElement('a');
-        a.href = downloadUrl;
-        a.download = file.file_name;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-
+        await downloadFile(fileUrl, file.file_name);
         setDownloadedFiles(prev => new Set(prev).add(file.file_storage_key));
+      } else {
+        alert('File not found in storage. (Seed/Mock files are not downloadable; please test with a new upload).');
       }
     } catch (e) {
       console.error('Download failed', e);

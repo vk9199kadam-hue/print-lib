@@ -3,6 +3,7 @@ import { useNavigate, useParams, Navigate } from 'react-router-dom';
 import { ArrowLeft, Upload, CreditCard, Clock, Printer, Bell, CheckCircle, Loader2, Download as DownloadIcon } from 'lucide-react';
 import { DB } from '../../utils/db';
 import { Order, FileItem } from '../../types';
+import { downloadFile } from '../../utils/fileStorage';
 import { playReadySound } from '../../utils/sound';
 import FileTypeIcon from '../../components/FileTypeIcon';
 
@@ -79,12 +80,9 @@ export default function OrderTracking() {
     try {
       const url = await DB.getFile(file.file_storage_key);
       if (url) {
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = file.file_name;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        await downloadFile(url, file.file_name);
+      } else {
+        alert('File not found in storage. (Seed/Mock files are not downloadable; please test with a new upload).');
       }
     } catch (e) {
       alert('Download failed');
