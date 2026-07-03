@@ -15,8 +15,10 @@ export const getFileUrl = query({
   args: { storageId: v.string() },
   handler: async (ctx, args) => {
     try {
-      return await ctx.storage.getUrl(args.storageId);
-    } catch {
+      const id = args.storageId as Id<"_storage">;
+      return await ctx.storage.getUrl(id);
+    } catch (e) {
+      console.error("getFileUrl failed for storageId:", args.storageId, e);
       return null;
     }
   },
