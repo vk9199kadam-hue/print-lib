@@ -18,10 +18,10 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'logo.png'],
       manifest: {
-        name: 'PrintEase Student App',
-        short_name: 'PrintEase',
+        name: 'RIT Library Print',
+        short_name: 'RIT Library',
         description: 'Upload your assignments to the print queue instantly.',
-        theme_color: '#1B4FFF',
+        theme_color: '#4E2269',
         background_color: '#ffffff',
         display: 'standalone',
         start_url: '/student/login',
