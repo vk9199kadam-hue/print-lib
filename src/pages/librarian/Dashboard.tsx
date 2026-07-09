@@ -201,11 +201,11 @@ export default function LibrarianDashboard() {
                     <div className="flex items-end justify-between">
                        <div className="flex items-center gap-4">
                           <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 font-black text-xs uppercase shadow-sm">
-                             {order.student_name[0]}
+                             {(order.student_name || 'Guest')[0]}
                           </div>
                           <div>
-                             <h3 className="font-black text-lg text-foreground uppercase tracking-tight leading-none">{order.student_name}</h3>
-                             <p className="text-xs font-bold text-blue-600 mt-1 uppercase tracking-widest">PRN: {order.student_print_id}</p>
+                             <h3 className="font-black text-lg text-foreground uppercase tracking-tight leading-none">{order.student_name || 'Guest Student'}</h3>
+                             <p className="text-xs font-bold text-blue-600 mt-1 uppercase tracking-widest">PRN: {order.student_print_id || '—'}</p>
                           </div>
                        </div>
                        
