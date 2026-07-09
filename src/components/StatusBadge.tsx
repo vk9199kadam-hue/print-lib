@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface StatusBadgeProps {
-  status: 'queued' | 'printing' | 'ready' | 'completed';
+  status: string;
 }
 
 const statusConfig = {
@@ -12,7 +12,7 @@ const statusConfig = {
 };
 
 export default function StatusBadge({ status }: StatusBadgeProps) {
-  const config = statusConfig[status];
+  const config = statusConfig[status] || { label: status || 'Pending', bg: 'bg-amber-100', text: 'text-amber-800', dot: 'bg-amber-500' };
   return (
     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${config.bg} ${config.text} ${status === 'ready' ? 'animate-pulse-glow' : ''}`}>
       <span className={`w-2 h-2 rounded-full ${config.dot}`} />
