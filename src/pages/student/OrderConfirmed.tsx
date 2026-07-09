@@ -69,8 +69,6 @@ export default function OrderConfirmed() {
         month: currentMonth,
       });
       setIsSaved(true);
-      // Auto-delete files silently upon saving payment record
-      handleDeleteAllFiles(true);
     } catch (e) {
       console.error(e);
       setError('Failed to save payment record. Please try again.');
