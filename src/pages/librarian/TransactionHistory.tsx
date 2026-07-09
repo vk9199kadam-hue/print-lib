@@ -49,7 +49,7 @@ export default function TransactionHistory() {
   useEffect(() => {
     setLoading(true);
     DB.getPaymentRecords(selectedMonth)
-      .then((data: any) => {
+      .then((data: PaymentRecord[]) => {
         setRecords(data || []);
         setLoading(false);
       })
