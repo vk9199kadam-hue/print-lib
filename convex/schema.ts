@@ -52,6 +52,8 @@ export default defineSchema({
     college: v.optional(v.string()),
     department: v.optional(v.string()),
     receiving_date: v.optional(v.string()),
+    is_archived: v.optional(v.boolean()),
+    is_student_deleted: v.optional(v.boolean()),
   })
     .index("by_order_id", ["order_id"])
     .index("by_student_id", ["student_id"])
@@ -130,4 +132,17 @@ export default defineSchema({
     value: v.any(),
   })
     .index("by_key", ["key"]),
+
+  // Payment Records table (Permanent billing log)
+  payment_records: defineTable({
+    print_id: v.string(),
+    name: v.string(),
+    prn: v.optional(v.string()),
+    amount_paid: v.number(),
+    month: v.string(),
+    created_at: v.number(),
+  })
+    .index("by_month", ["month"])
+    .index("by_print_id", ["print_id"])
+    .index("by_created_at", ["created_at"]),
 });

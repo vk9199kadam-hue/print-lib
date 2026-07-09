@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search } from 'lucide-react';
+import { ArrowLeft, Search, Trash2, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { DB } from '../../utils/db';
 import { Order } from '../../types';
@@ -12,6 +12,7 @@ export default function OrderHistory() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -26,6 +27,31 @@ export default function OrderHistory() {
     if (filter === 'completed') return o.print_status === 'completed';
     return true;
   }).filter(o => !search || o.order_id.toLowerCase().includes(search.toLowerCase()));
+
+  const handleDelete = async (order: Order) => {
+    const confirmed = window.confirm(
+      'Delete this request?\n\nYour uploaded files will be permanently removed for security. Your order info (date, pages, amount) will remain in our records.'
+    );
+    if (!confirmed) return;
+
+    setDeletingId(order.order_id);
+    try {
+      // Step 1: Delete the actual uploaded files from storage (security)
+      for (const file of order.files) {
+        if (file.file_storage_key) {
+          await DB.deleteFile(file.file_storage_key);
+        }
+      }
+      // Step 2: Soft-delete — hides from student view, keeps metadata in DB
+      await DB.softDeleteOrder(order.id);
+      // Step 3: Remove from local state immediately
+      setOrders(prev => prev.filter(o => o.order_id !== order.order_id));
+    } catch (e) {
+      alert('Failed to delete request. Please try again.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-secondary">
@@ -81,9 +107,6 @@ export default function OrderHistory() {
                     <span className="font-medium bg-secondary px-1.5 py-0.5 rounded">{new Date(order.created_at).toLocaleDateString()}</span>
                     <span className="font-medium bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">{order.files.length} FILE{order.files.length !== 1 ? 'S' : ''}</span>
                     <span className="font-medium bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded">{order.total_pages} PAGES</span>
-                    {order.files.some(f => (f.slidesPerPage || 0) > 1) && (
-                      <span className="font-medium bg-orange-50 text-orange-700 px-1.5 py-0.5 rounded">MULTI-SLIDE</span>
-                    )}
                   </div>
                   <span className="text-sm font-bold text-foreground">₹{order.total_amount}</span>
                 </div>
@@ -92,10 +115,29 @@ export default function OrderHistory() {
                     Ready for pickup!
                   </div>
                 )}
-                <div className="flex gap-2">
-                  <button onClick={() => navigate(`/student/track/${order.order_id}`)} className="text-sm text-blue-primary font-semibold hover:underline">
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-input">
+                  <button
+                    onClick={() => navigate(`/student/track/${order.order_id}`)}
+                    className="text-sm text-blue-primary font-semibold hover:underline"
+                  >
                     Track Order
                   </button>
+
+                  {/* Delete button — only allowed when queued or completed, not while printing/ready */}
+                  {(order.print_status === 'queued' || order.print_status === 'completed') && (
+                    <button
+                      onClick={() => handleDelete(order)}
+                      disabled={deletingId === order.order_id}
+                      className="flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+                    >
+                      {deletingId === order.order_id ? (
+                        <Loader2 size={13} className="animate-spin" />
+                      ) : (
+                        <Trash2 size={13} />
+                      )}
+                      {deletingId === order.order_id ? 'Deleting...' : 'Delete'}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

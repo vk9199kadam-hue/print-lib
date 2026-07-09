@@ -83,7 +83,7 @@ export const getOrderById = query({
   }
 });
 
-// Fetch all orders for a student ID
+// Fetch all orders for a student ID (excludes student-deleted orders)
 export const getOrdersByStudentId = query({
   args: { student_id: v.string() },
   handler: async (ctx, args) => {
@@ -92,10 +92,11 @@ export const getOrdersByStudentId = query({
       .withIndex("by_student_id", (q) => q.eq("student_id", args.student_id))
       .collect();
       
-    orders.sort((a, b) => b.created_at - a.created_at);
+    const visible = orders.filter(o => !o.is_student_deleted);
+    visible.sort((a, b) => b.created_at - a.created_at);
     
     const results = [];
-    for (const order of orders) {
+    for (const order of visible) {
       const files = await ctx.db
         .query("order_files")
         .withIndex("by_order_id", (q) => q.eq("order_id", order._id))
@@ -106,7 +107,7 @@ export const getOrdersByStudentId = query({
   }
 });
 
-// Fetch all paid orders for queue dashboard
+// Fetch all paid orders for queue dashboard (excludes archived)
 export const getPaidOrders = query({
   args: {},
   handler: async (ctx) => {
@@ -114,7 +115,7 @@ export const getPaidOrders = query({
       .query("orders")
       .collect();
       
-    const paid = orders.filter(o => o.payment_status === "paid");
+    const paid = orders.filter(o => o.payment_status === "paid" && !o.is_archived);
     paid.sort((a, b) => b.created_at - a.created_at);
     
     const results = [];
@@ -165,5 +166,54 @@ export const deleteOrder = mutation({
     } catch {
       return false;
     }
+  }
+});
+
+// Archive (soft-delete) a completed order — keeps it in DB for history
+export const archiveOrder = mutation({
+  args: { id: v.string() },
+  handler: async (ctx, args) => {
+    try {
+      const parsedId = ctx.db.normalizeId("orders", args.id);
+      if (!parsedId) return false;
+      await ctx.db.patch(parsedId, { is_archived: true });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+});
+
+// Student soft-delete: hides order from student view, deletes files, keeps metadata in DB
+export const softDeleteOrder = mutation({
+  args: { id: v.string() },
+  handler: async (ctx, args) => {
+    try {
+      const parsedId = ctx.db.normalizeId("orders", args.id);
+      if (!parsedId) return false;
+      await ctx.db.patch(parsedId, { is_student_deleted: true });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+});
+
+// Fetch ALL orders for the librarian history/export page (including archived)
+export const getAllOrdersForHistory = query({
+  args: {},
+  handler: async (ctx) => {
+    const orders = await ctx.db.query("orders").collect();
+    orders.sort((a, b) => b.created_at - a.created_at);
+    
+    const results = [];
+    for (const order of orders) {
+      const files = await ctx.db
+        .query("order_files")
+        .withIndex("by_order_id", (q) => q.eq("order_id", order._id))
+        .collect();
+      results.push({ ...order, files, id: order._id });
+    }
+    return results;
   }
 });

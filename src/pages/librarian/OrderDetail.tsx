@@ -103,6 +103,28 @@ export default function OrderDetail() {
     }
   };
 
+  const handleArchiveOrder = async () => {
+    setLoading(true);
+    try {
+      // Delete associated files from storage to free space
+      for (const file of order.files) {
+        await DB.deleteFile(file.file_storage_key);
+      }
+      // Archive order — keeps record in DB for history/export
+      const success = await DB.archiveOrder(order.id);
+      if (success) {
+        navigate('/librarian/dashboard');
+      } else {
+        alert('Failed to archive order.');
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred while archiving the order.');
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-secondary pb-12">
       <header className="bg-white border-b border-input px-4 py-4 flex items-center justify-between sticky top-0 z-20 shadow-sm">
@@ -289,14 +311,14 @@ export default function OrderDetail() {
               <div className="bg-emerald-500/10 border-2 border-dashed border-emerald-500 text-emerald-600 rounded-[32px] p-8 text-center flex flex-col items-center justify-center gap-3 animate-fade-in">
                 <CheckCircle size={40} />
                 <p className="font-black text-lg uppercase tracking-tight">Order Fully Handed Over</p>
-                <p className="text-xs font-bold opacity-70">Security protocol: Sensitive files have been scheduled for deletion.</p>
+                <p className="text-xs font-bold opacity-70">Files will be removed from storage. Order record will be saved for your history reports.</p>
               </div>
               
               <button
-                onClick={handleDeleteOrder}
+                onClick={handleArchiveOrder}
                 className="w-full py-6 rounded-[32px] bg-red-600 text-white font-black text-lg uppercase tracking-widest shadow-xl shadow-red-600/20 hover:bg-red-700 transition transform active:scale-95 flex items-center justify-center gap-4 border-b-4 border-red-800"
               >
-                <Download size={24} /> I COMPLETED MY DOWNLOAD - DELETE NOW
+                <Download size={24} /> I COMPLETED MY DOWNLOAD - CLOSE ORDER
               </button>
             </div>
           )}

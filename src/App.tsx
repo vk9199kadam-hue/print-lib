@@ -17,6 +17,7 @@ import SubmissionsInbox from './pages/librarian/SubmissionsInbox';
 import CapstoneOrders from './pages/librarian/CapstoneOrders';
 import Analytics from './pages/librarian/Analytics';
 import LibrarySettings from './pages/librarian/Settings';
+import TransactionHistory from './pages/librarian/TransactionHistory';
 
 import OrderHistory from './pages/student/OrderHistory';
 import OrderTracking from './pages/student/OrderTracking';
@@ -56,9 +57,9 @@ function AppRoutes() {
       {/* Student Routes */}
       <Route path="/student/login" element={<StudentLogin />} />
       <Route path="/student/dashboard" element={<ProtectedStudentRoute><StudentDashboard /></ProtectedStudentRoute>} />
-      <Route path="/student/upload" element={<ProtectedStudentRoute><FileUpload /></ProtectedStudentRoute>} />
-      <Route path="/student/payment" element={<ProtectedStudentRoute><Payment /></ProtectedStudentRoute>} />
-      <Route path="/student/confirmed" element={<ProtectedStudentRoute><OrderConfirmed /></ProtectedStudentRoute>} />
+      <Route path="/student/upload" element={<FileUpload />} />
+      <Route path="/student/payment" element={<Payment />} />
+      <Route path="/student/confirmed" element={<OrderConfirmed />} />
       <Route path="/student/history" element={<ProtectedStudentRoute><OrderHistory /></ProtectedStudentRoute>} />
       <Route path="/student/track/:order_id" element={<ProtectedStudentRoute><OrderTracking /></ProtectedStudentRoute>} />
       <Route path="/student/profile" element={<ProtectedStudentRoute><Profile /></ProtectedStudentRoute>} />
@@ -72,6 +73,7 @@ function AppRoutes() {
       <Route path="/librarian/capstones" element={<ProtectedLibrarianRoute><CapstoneOrders /></ProtectedLibrarianRoute>} />
       <Route path="/librarian/analytics" element={<ProtectedLibrarianRoute><Analytics /></ProtectedLibrarianRoute>} />
       <Route path="/librarian/settings" element={<ProtectedLibrarianRoute><LibrarySettings /></ProtectedLibrarianRoute>} />
+      <Route path="/librarian/history" element={<ProtectedLibrarianRoute><TransactionHistory /></ProtectedLibrarianRoute>} />
       
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

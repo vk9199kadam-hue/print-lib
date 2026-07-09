@@ -36,3 +36,39 @@ export const deleteFile = mutation({
     }
   },
 });
+
+// Automatic cleanup mutation: delete files older than 24 hours
+export const cleanupOldFiles = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
+    
+    const oldOrders = await ctx.db
+      .query("orders")
+      .withIndex("by_created_at", (q) => q.lt("created_at", oneDayAgo))
+      .collect();
+      
+    let deletedCount = 0;
+    
+    for (const order of oldOrders) {
+      const files = await ctx.db
+        .query("order_files")
+        .withIndex("by_order_id", (q) => q.eq("order_id", order._id))
+        .collect();
+        
+      for (const file of files) {
+        if (file.file_storage_key && file.file_storage_key !== "" && file.file_storage_key !== "deleted") {
+          try {
+            await ctx.storage.delete(file.file_storage_key as Id<"_storage">);
+            deletedCount++;
+          } catch (e) {
+            console.error("Failed to delete file from cloud storage:", file.file_storage_key, e);
+          }
+          await ctx.db.patch(file._id, { file_storage_key: "deleted" });
+        }
+      }
+    }
+    
+    return { success: true, deletedCount };
+  },
+});

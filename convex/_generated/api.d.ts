@@ -8,9 +8,11 @@
  * @module
  */
 
+import type * as crons from "../crons.js";
 import type * as files from "../files.js";
 import type * as librarians from "../librarians.js";
 import type * as orders from "../orders.js";
+import type * as paymentRecords from "../paymentRecords.js";
 import type * as seed from "../seed.js";
 import type * as settings from "../settings.js";
 import type * as submissions from "../submissions.js";
@@ -23,9 +25,11 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  crons: typeof crons;
   files: typeof files;
   librarians: typeof librarians;
   orders: typeof orders;
+  paymentRecords: typeof paymentRecords;
   seed: typeof seed;
   settings: typeof settings;
   submissions: typeof submissions;

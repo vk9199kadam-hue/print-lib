@@ -33,11 +33,11 @@ export default function Payment() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!state || !currentUser) {
+    if (!state) {
       setRedirecting(true);
       navigate('/student/upload');
     }
-  }, [state, currentUser, authLoading, navigate]);
+  }, [state, authLoading, navigate]);
   
   const pricing = DB.getPricing();
   
@@ -67,25 +67,25 @@ export default function Payment() {
   if (authLoading) return (
     <div className="min-h-screen flex items-center justify-center bg-secondary">
        <Loader2 className="animate-spin text-blue-primary" size={40} />
-    </div>
+     </div>
   );
 
-  if (redirecting || !state || !currentUser) return null;
+  if (redirecting || !state) return null;
 
   const handleFinishPayment = async () => {
     try {
-      if (!currentUser.student_print_id || !currentUser.id) {
-         throw new Error("Your session is incomplete. Please log out and log back in.");
-      }
+      const studentId = currentUser?.id || 'guest_' + Date.now();
+      const studentPrintId = currentUser?.student_print_id || 'PRT-' + Date.now();
+      const studentName = state.isCapstone ? (state.capstoneData?.name || currentUser?.name || 'Guest Student') : (currentUser?.name || 'Guest Student');
 
       const tempId = 'ORD-' + Date.now();
       const qr = await generateQR(tempId);
       
       const order = await DB.createOrder({
         order_id: tempId,
-        student_id: currentUser.id,
-        student_print_id: currentUser.student_print_id,
-        student_name: state.isCapstone ? (state.capstoneData?.name || currentUser.name) : currentUser.name,
+        student_id: studentId,
+        student_print_id: studentPrintId,
+        student_name: studentName,
         order_type: state.isCapstone ? 'capstone' : 'standard',
         files: filesWithPrices.map(({ base64, ...rest }) => rest as FileItem),
         total_bw_pages: filesWithPrices.reduce((s, f) => s + f.bw_pages, 0),

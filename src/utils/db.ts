@@ -58,6 +58,15 @@ export const DB = {
   async deleteOrder(id: string): Promise<boolean> {
     return ApiClient.deleteOrder(id);
   },
+  async archiveOrder(id: string): Promise<boolean> {
+    return ApiClient.archiveOrder(id);
+  },
+  async softDeleteOrder(id: string): Promise<boolean> {
+    return ApiClient.softDeleteOrder(id);
+  },
+  async getAllOrdersForHistory(): Promise<Order[]> {
+    return ApiClient.getAllOrdersForHistory();
+  },
   async updateOrderQR(order_id: string, qr_code: string): Promise<void> {
     // Not critical for now
   },
@@ -174,6 +183,12 @@ export const DB = {
   },
   async updateLibrarySettings(data: { is_open: boolean; closing_message: string; standard_hours?: string }) {
     return ApiClient.updateLibrarySettings(data);
+  },
+  async savePaymentRecord(data: { print_id: string; name: string; prn?: string; amount_paid: number; month: string }) {
+    return ApiClient.savePaymentRecord(data);
+  },
+  async getPaymentRecords(month?: string) {
+    return ApiClient.getPaymentRecords(month);
   }
 };
 

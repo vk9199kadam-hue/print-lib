@@ -242,6 +242,40 @@ export const ApiClient = {
     return await convex.mutation(api.orders.deleteOrder, { id });
   },
 
+  async archiveOrder(id: string): Promise<boolean> {
+    return await convex.mutation(api.orders.archiveOrder, { id });
+  },
+
+  async softDeleteOrder(id: string): Promise<boolean> {
+    return await convex.mutation(api.orders.softDeleteOrder, { id });
+  },
+
+  async getAllOrdersForHistory(): Promise<Order[]> {
+    const orders = await convex.query(api.orders.getAllOrdersForHistory);
+    return orders.map(o => ({
+      ...o,
+      id: o._id,
+      payment_status: (o.payment_status as Order['payment_status']) || 'paid',
+      print_status: (o.print_status as Order['print_status']) || 'queued',
+      order_type: (o.order_type as Order['order_type']) || 'standard',
+      created_at: new Date(o.created_at).toISOString(),
+      updated_at: new Date(o.created_at).toISOString(),
+      is_archived: o.is_archived || false,
+      extra_services: {
+        spiral_binding: o.spiral_binding,
+        stapling: o.stapling,
+      },
+      files: o.files.map(f => ({
+        ...f,
+        temp_id: f._id,
+        file_type: (f.file_type as FileItem['file_type']) || 'pdf',
+        print_type: (f.print_type as FileItem['print_type']) || 'bw',
+        sides: (f.sides as FileItem['sides']) || 'single',
+        file_size_kb: 0,
+      }))
+    })) as Order[];
+  },
+
   // --- LIBRARY SETTINGS ---
   async getLibrarySettings(): Promise<{ is_open: boolean; closing_message?: string; standard_hours?: string }> {
     const settings = await convex.query(api.settings.getLibrarySettings);
@@ -344,5 +378,13 @@ export const ApiClient = {
 
   async updatePricing(pricing: Pricing): Promise<boolean> {
     return await convex.mutation(api.settings.updatePricing, { pricing });
+  },
+
+  async savePaymentRecord(data: { print_id: string; name: string; prn?: string; amount_paid: number; month: string }): Promise<string> {
+    return await convex.mutation(api.paymentRecords.savePaymentRecord, data);
+  },
+
+  async getPaymentRecords(month?: string) {
+    return await convex.query(api.paymentRecords.getPaymentRecords, { month });
   }
 };

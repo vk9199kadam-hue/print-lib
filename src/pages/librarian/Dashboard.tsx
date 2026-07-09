@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Printer, LogOut, Search, Clock, Zap, MessageSquare, Library } from 'lucide-react';
+import { Printer, LogOut, Search, Clock, Zap, MessageSquare, Library, History } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { DB } from '../../utils/db';
 import { Order } from '../../types';
@@ -20,7 +20,7 @@ export default function LibrarianDashboard() {
   const navigate = useNavigate();
   const { currentLibrary, logout } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
-  const [filter, setFilter] = useState('queued'); // Default to queued as it's the most important
+  const [filter, setFilter] = useState('all'); // Default to all active orders
   const [search, setSearch] = useState('');
   const prevCount = useRef(0);
   
@@ -104,6 +104,13 @@ export default function LibrarianDashboard() {
             <span className="hidden md:block font-bold text-sm">Print Queue</span>
             {stats.queued > 0 && <span className="hidden md:flex ml-auto bg-black/30 text-[10px] px-2 py-0.5 rounded-full">{stats.queued}</span>}
           </button>
+          <button 
+            onClick={() => navigate('/librarian/history')}
+            className={`w-full flex items-center justify-center md:justify-start gap-4 p-4 rounded-2xl transition-all text-gray-400 hover:bg-white/5`}
+          >
+            <History size={20} />
+            <span className="hidden md:block font-bold text-sm">Transaction History</span>
+          </button>
         </nav>
 
         <button 
@@ -152,7 +159,7 @@ export default function LibrarianDashboard() {
               />
             </div>
             <div className="flex gap-2 bg-white p-1.5 rounded-2xl shadow-sm border border-input h-fit">
-              {['all', 'queued', 'printing', 'ready', 'completed'].map(f => (
+              {['all', 'printing', 'ready', 'completed'].map(f => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
