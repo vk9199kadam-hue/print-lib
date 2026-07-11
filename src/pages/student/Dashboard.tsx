@@ -333,19 +333,16 @@ export default function StudentDashboard() {
            </div>
         </div>
 
-        <div className="text-center pb-8 opacity-50">
+        <div className="text-center pb-8 opacity-50 space-y-1">
            <p className="text-[10px] font-bold uppercase tracking-widest">Powered by RIT Library Services</p>
+           <p className="text-[9px] font-bold tracking-wider text-muted-foreground lowercase">made by = viraj kadam | application of printease</p>
         </div>
       </div>
 
       {/* Floating Summary & Submit Footer */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-input p-6 shadow-2xl z-40 rounded-t-[32px]">
-        <div className="max-w-lg mx-auto">
-          {!priceResult ? (
-            <div className="text-center py-2">
-               <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Awaiting library documents...</p>
-            </div>
-          ) : (
+      {priceResult && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-input p-6 shadow-2xl z-40 rounded-t-[32px]">
+          <div className="max-w-lg mx-auto">
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -365,9 +362,9 @@ export default function StudentDashboard() {
                 SEND DOCUMENT TO LIBRARIAN'S QUEUE
               </button>
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
