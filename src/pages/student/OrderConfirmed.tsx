@@ -13,9 +13,9 @@ export default function OrderConfirmed() {
   const [libraryInfo, setLibraryInfo] = useState<{ contact_number: string } | null>(null);
 
   // Form states
-  const [studentName, setStudentName] = useState(order?.student_name || '');
-  const [studentPrn, setStudentPrn] = useState(order?.student_print_id || '');
-  const [amountPaid, setAmountPaid] = useState(order?.total_amount?.toString() || '');
+  const [studentName, setStudentName] = useState('');
+  const [studentPrn, setStudentPrn] = useState('');
+  const [amountPaid, setAmountPaid] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [error, setError] = useState('');
@@ -171,19 +171,12 @@ export default function OrderConfirmed() {
         </div>
 
         {/* ID cards */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3">
           <div className="rounded-xl p-4 text-primary-foreground" style={{ background: 'linear-gradient(135deg, #0A1628, #1B4FFF)' }}>
             <p className="text-xs uppercase tracking-widest text-blue-200 mb-1">Order ID</p>
             <p className="font-mono font-bold text-sm">{order.order_id}</p>
             <button onClick={() => copyText(order.order_id, 'order')} className="mt-2 text-xs flex items-center gap-1 text-blue-200 hover:text-primary-foreground">
               {copiedId === 'order' ? <Check size={12} /> : <Copy size={12} />} {copiedId === 'order' ? 'Copied!' : 'Copy'}
-            </button>
-          </div>
-          <div className="rounded-xl p-4 text-primary-foreground" style={{ background: 'linear-gradient(135deg, #061A0F, #0D6B3E)' }}>
-            <p className="text-xs uppercase tracking-widest text-green-200 mb-1">Print ID</p>
-            <p className="font-mono font-bold text-sm">{order.student_print_id}</p>
-            <button onClick={() => copyText(order.student_print_id, 'print')} className="mt-2 text-xs flex items-center gap-1 text-green-200 hover:text-primary-foreground">
-              {copiedId === 'print' ? <Check size={12} /> : <Copy size={12} />} {copiedId === 'print' ? 'Copied!' : 'Copy'}
             </button>
           </div>
         </div>
