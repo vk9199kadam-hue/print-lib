@@ -13,8 +13,8 @@ export default function StudentLogin() {
   const [error, setError] = useState('');
 
   React.useEffect(() => {
-    if (session?.role === 'student') navigate('/student/dashboard', { replace: true });
-  }, [session, navigate]);
+    navigate('/student/dashboard', { replace: true });
+  }, [navigate]);
 
   const handleLogin = async () => {
     if (!name.trim()) {

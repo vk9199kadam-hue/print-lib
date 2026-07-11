@@ -157,7 +157,7 @@ export default function StudentDashboard() {
 
   const canProceed = uploadedFiles.length > 0 && uploadedFiles.every(f => f.page_count > 0);
 
-  const handlePayAndSubmit = async () => {
+  const handleSendToLibrarianQueue = async () => {
     // Validate details
     if (isEditing) {
       if (!studentName.trim()) {
@@ -522,11 +522,11 @@ export default function StudentDashboard() {
                 </div>
               </div>
               <button
-                onClick={handlePayAndSubmit}
+                onClick={handleSendToLibrarianQueue}
                 disabled={!canProceed || !librarySettings.is_open || isSubmitting}
                 className="w-full py-5 rounded-2xl bg-blue-primary text-primary-foreground font-black text-lg hover:opacity-95 transition-all transform active:scale-95 disabled:opacity-40 shadow-xl shadow-blue-primary/20 flex items-center justify-center gap-2"
               >
-                PAY & SUBMIT TO LIBRARY →
+                SEND DOCUMENT TO LIBRARIAN'S QUEUE
               </button>
             </div>
           )}

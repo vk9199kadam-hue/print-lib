@@ -24,22 +24,8 @@ export default function FileUpload() {
   });
 
   useEffect(() => {
-    const initPricing = async () => {
-      const livePricing = await DB.fetchPricing();
-      setPricing(livePricing);
-    };
-    initPricing();
-
-    const fetchSettings = async () => {
-      try {
-        const data = await DB.getLibrarySettings();
-        if (data) setLibrarySettings(data);
-      } catch (e) {
-        console.error("Could not fetch library settings", e);
-      }
-    };
-    fetchSettings();
-  }, []);
+    navigate('/student/dashboard', { replace: true });
+  }, [navigate]);
 
   const priceResult = useMemo(() => {
     if (uploadedFiles.length === 0) return null;
