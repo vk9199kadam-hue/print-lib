@@ -179,6 +179,9 @@ export default function OrderConfirmed() {
               {copiedId === 'order' ? <Check size={12} /> : <Copy size={12} />} {copiedId === 'order' ? 'Copied!' : 'Copy'}
             </button>
           </div>
+          <p className="text-xs font-black text-blue-600 bg-blue-50 border border-blue-200 p-3 rounded-xl text-center leading-relaxed">
+            Based on this Order ID, download your document and fill the given information (compulsory)
+          </p>
         </div>
 
         {/* Payment Record Form */}
