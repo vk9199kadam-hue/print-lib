@@ -13,8 +13,8 @@ export default function OrderConfirmed() {
   const [libraryInfo, setLibraryInfo] = useState<{ contact_number: string } | null>(null);
 
   // Form states
-  const [studentName, setStudentName] = useState('');
-  const [studentPrn, setStudentPrn] = useState('');
+  const [studentName, setStudentName] = useState(order?.student_name || '');
+  const [studentPrn, setStudentPrn] = useState(order?.student_print_id || '');
   const [amountPaid, setAmountPaid] = useState(order?.total_amount?.toString() || '');
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
@@ -295,19 +295,7 @@ export default function OrderConfirmed() {
           </div>
         </div>
 
-        {/* QR Code */}
-        {order.qr_code && (
-          <div className="bg-card rounded-2xl border border-input p-6 text-center">
-            <p className="text-sm text-muted-foreground mb-3">📱 Show this QR code at the library counter</p>
-            <img src={order.qr_code} alt="QR Code" className="mx-auto w-48 h-48" />
-            <button
-              onClick={() => downloadFile(order.qr_code, `QR-${order.order_id}.png`)}
-              className="mt-3 text-sm text-blue-primary font-semibold flex items-center gap-1 mx-auto hover:underline"
-            >
-              <Download size={14} /> Download QR Code
-            </button>
-          </div>
-        )}
+
 
         <div className="bg-blue-50 rounded-[32px] p-8 text-center border-2 border-blue-600 shadow-lg shadow-blue-500/10 animate-draw">
           <p className="text-blue-600 font-black text-xs uppercase tracking-widest mb-2">Library Print Queue</p>

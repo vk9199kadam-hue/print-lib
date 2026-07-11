@@ -86,9 +86,9 @@ export default function Landing() {
              <Printer size={48} />
           </div>
           <h2 className="font-syne font-black text-4xl text-white mb-3 uppercase tracking-tighter">Student Access</h2>
-          <p className="text-blue-100 mb-10 font-bold text-sm opacity-80 uppercase tracking-widest">Login with Name & PRN</p>
+          <p className="text-blue-100 mb-10 font-bold text-sm opacity-80 uppercase tracking-widest">Direct Document Upload</p>
           <button
-            onClick={() => navigate('/student/login')}
+            onClick={() => navigate('/student/dashboard')}
             className="w-full md:w-auto px-12 py-5 rounded-3xl font-black text-blue-900 bg-white hover:bg-blue-50 transition-all duration-300 shadow-xl shadow-blue-900/20 uppercase text-xs tracking-widest relative z-10"
           >
             Start Printing →

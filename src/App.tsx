@@ -31,9 +31,7 @@ import Privacy from './pages/public/Privacy';
 import Refund from './pages/public/Refund';
 
 function ProtectedStudentRoute({ children }: { children: React.ReactNode }) {
-  const { session, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-blue-primary" size={32} /></div>;
-  if (!session || session.role !== 'student') return <Navigate to="/student/login" replace />;
+  // Student routes are now globally public, so we bypass pre-authentication checks
   return <>{children}</>;
 }
 
@@ -55,9 +53,9 @@ function AppRoutes() {
       <Route path="/refund" element={<Refund />} />
       
       {/* Student Routes */}
-      <Route path="/student/login" element={<StudentLogin />} />
+      <Route path="/student/login" element={<Navigate to="/student/dashboard" replace />} />
       <Route path="/student/dashboard" element={<ProtectedStudentRoute><StudentDashboard /></ProtectedStudentRoute>} />
-      <Route path="/student/upload" element={<FileUpload />} />
+      <Route path="/student/upload" element={<Navigate to="/student/dashboard" replace />} />
       <Route path="/student/payment" element={<Payment />} />
       <Route path="/student/confirmed" element={<OrderConfirmed />} />
       <Route path="/student/history" element={<ProtectedStudentRoute><OrderHistory /></ProtectedStudentRoute>} />
