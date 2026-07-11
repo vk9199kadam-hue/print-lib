@@ -126,9 +126,10 @@ export default function Landing() {
             <button onClick={() => navigate('/refund')} className="hover:text-blue-600 transition-colors">Refund</button>
           </div>
           
-          <div className="text-center">
+          <div className="text-center space-y-1">
              <p className="font-black text-slate-900 text-xs uppercase tracking-widest mb-1">RIT COLLEGE LIBRARY SERVICES</p>
              <p className="text-[10px] font-bold opacity-60 uppercase tracking-widest">Self-Service Printing System • © {new Date().getFullYear()}</p>
+             <p className="text-[9px] font-bold tracking-wider text-slate-500 lowercase">made by = viraj kadam | application of printease</p>
           </div>
           
           <div className="pt-8 border-t border-gray-50 w-full flex flex-col items-center gap-2">
