@@ -217,3 +217,27 @@ export const getAllOrdersForHistory = query({
     return results;
   }
 });
+
+// Update order student details and amount
+export const updateOrderDetails = mutation({
+  args: {
+    order_id: v.string(),
+    student_name: v.string(),
+    student_print_id: v.string(),
+    total_amount: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const order = await ctx.db
+      .query("orders")
+      .withIndex("by_order_id", (q) => q.eq("order_id", args.order_id))
+      .first();
+    if (!order) return false;
+    
+    await ctx.db.patch(order._id, {
+      student_name: args.student_name,
+      student_print_id: args.student_print_id,
+      total_amount: args.total_amount,
+    });
+    return true;
+  }
+});

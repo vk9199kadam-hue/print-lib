@@ -13,12 +13,6 @@ import { playSuccessSound } from '../../utils/sound';
 export default function StudentDashboard() {
   const navigate = useNavigate();
 
-  // Local student state (stored in localStorage)
-  const [studentName, setStudentName] = useState('');
-  const [studentPrn, setStudentPrn] = useState('');
-  const [isEditing, setIsEditing] = useState(true);
-  const [validationError, setValidationError] = useState('');
-
   // Upload and price calculator states
   const [uploadedFiles, setUploadedFiles] = useState<(FileItem & { size?: number })[]>([]);
   const [extras] = useState<ExtraServices>({ spiral_binding: false, stapling: false });
@@ -36,14 +30,6 @@ export default function StudentDashboard() {
 
   // Initialize
   useEffect(() => {
-    // Load student info from cache
-    const cachedName = localStorage.getItem('library_student_name');
-    const cachedPrn = localStorage.getItem('library_student_prn');
-    if (cachedName && cachedPrn) {
-      setStudentName(cachedName);
-      setStudentPrn(cachedPrn);
-      setIsEditing(false);
-    }
 
     const initPricing = async () => {
       const livePricing = await DB.fetchPricing();
@@ -132,49 +118,9 @@ export default function StudentDashboard() {
     setIsDragging(true);
   };
 
-  const handleSaveInfo = () => {
-    if (!studentName.trim()) {
-      setValidationError('Please enter your full name');
-      return;
-    }
-    if (!/^\d{7}$/.test(studentPrn)) {
-      setValidationError('PRN must be exactly 7 digits');
-      return;
-    }
-    setValidationError('');
-    localStorage.setItem('library_student_name', studentName.trim());
-    localStorage.setItem('library_student_prn', studentPrn.trim());
-    setIsEditing(false);
-  };
-
-  const handleClearInfo = () => {
-    localStorage.removeItem('library_student_name');
-    localStorage.removeItem('library_student_prn');
-    setStudentName('');
-    setStudentPrn('');
-    setIsEditing(true);
-  };
-
   const canProceed = uploadedFiles.length > 0 && uploadedFiles.every(f => f.page_count > 0);
 
   const handleSendToLibrarianQueue = async () => {
-    // Validate details
-    if (isEditing) {
-      if (!studentName.trim()) {
-        setValidationError('Please enter your full name');
-        showToast('Please enter your full name');
-        return;
-      }
-      if (!/^\d{7}$/.test(studentPrn)) {
-        setValidationError('PRN must be exactly 7 digits');
-        showToast('PRN must be exactly 7 digits');
-        return;
-      }
-      localStorage.setItem('library_student_name', studentName.trim());
-      localStorage.setItem('library_student_prn', studentPrn.trim());
-      setIsEditing(false);
-    }
-
     if (uploadedFiles.length === 0) {
       showToast('Please upload at least one document');
       return;
@@ -187,42 +133,37 @@ export default function StudentDashboard() {
 
     setIsSubmitting(true);
     try {
-      const studentId = 'student_' + studentPrn;
-      const studentPrintId = studentPrn;
+      const studentId = 'guest_' + Date.now();
+      const studentPrintId = 'PRT-' + Date.now().toString().slice(-6);
       const tempId = 'ORD-' + Date.now();
       const qr = await generateQR(tempId);
 
       const filesWithPrices = uploadedFiles.map(f => {
-        const calc = calcFilePrice(f, pricing, false);
         return { 
           ...f, 
-          bw_pages: calc.bw_pages, 
-          color_pages: calc.color_pages, 
-          file_price: calc.file_price 
+          bw_pages: f.page_count || 1, 
+          color_pages: 0, 
+          file_price: 0 
         };
       });
 
-      const totalBwPages = filesWithPrices.reduce((s, f) => s + f.bw_pages, 0);
-      const totalColorPages = filesWithPrices.reduce((s, f) => s + f.color_pages, 0);
       const totalPagesCount = filesWithPrices.reduce((s, f) => s + ((f.page_count || 1) * f.copies), 0);
-
-      const calculatedTotal = calcTotal(uploadedFiles, extras, pricing);
 
       const order = await DB.createOrder({
         order_id: tempId,
         student_id: studentId,
         student_print_id: studentPrintId,
-        student_name: studentName.trim(),
+        student_name: 'Library Student',
         order_type: 'standard',
         files: filesWithPrices.map(({ base64, ...rest }) => rest as FileItem),
-        total_bw_pages: totalBwPages,
-        total_color_pages: totalColorPages,
+        total_bw_pages: totalPagesCount,
+        total_color_pages: 0,
         total_pages: totalPagesCount,
         extra_services: extras,
-        service_fee: calculatedTotal.service_fee,
-        subtotal: calculatedTotal.subtotal,
-        total_amount: calculatedTotal.total_amount,
-        payment_status: 'paid', // Direct approval
+        service_fee: 0,
+        subtotal: 0,
+        total_amount: 0,
+        payment_status: 'paid',
         print_status: 'queued',
         qr_code: qr
       });
@@ -270,86 +211,7 @@ export default function StudentDashboard() {
 
       <div className="max-w-lg mx-auto p-4 space-y-6">
         
-        {/* Identity Details Card */}
-        <div className="bg-white rounded-3xl border border-input p-6 shadow-sm space-y-4 animate-fade-in-up">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-primary animate-pulse"></span>
-              <h3 className="font-syne font-black text-sm text-foreground uppercase tracking-tight">Student Information</h3>
-            </div>
-            {!isEditing && (
-              <button 
-                onClick={handleClearInfo}
-                className="text-[10px] font-black text-blue-primary hover:text-blue-700 uppercase tracking-widest transition"
-              >
-                Change details
-              </button>
-            )}
-          </div>
 
-          {isEditing ? (
-            <div className="space-y-4">
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Please provide your Name and 7-digit PRN number. These details will print on the cover/receipt.
-              </p>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Full Name</label>
-                  <div className="relative">
-                    <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <input
-                      type="text"
-                      placeholder="e.g. Jayesh Patil"
-                      value={studentName}
-                      onChange={e => { setStudentName(e.target.value); setValidationError(''); }}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-secondary/30 focus:ring-2 focus:ring-blue-primary outline-none text-sm font-semibold"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">PRN Number (7 Digits)</label>
-                  <div className="relative">
-                    <Hash size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <input
-                      type="text"
-                      maxLength={7}
-                      placeholder="e.g. 1234567"
-                      value={studentPrn}
-                      onChange={e => {
-                        const val = e.target.value.replace(/\D/g, '');
-                        setStudentPrn(val);
-                        setValidationError('');
-                      }}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-secondary/30 focus:ring-2 focus:ring-blue-primary outline-none text-sm font-semibold tracking-wider font-mono"
-                    />
-                  </div>
-                </div>
-
-                {validationError && (
-                  <p className="text-xs text-red-500 font-bold text-center mt-1">{validationError}</p>
-                )}
-
-                <button
-                  onClick={handleSaveInfo}
-                  className="w-full py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs uppercase tracking-widest hover:bg-slate-800 transition"
-                >
-                  Save & Continue
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-4 py-1">
-              <div className="w-12 h-12 rounded-2xl bg-blue-primary/10 flex items-center justify-center text-blue-primary shrink-0">
-                <User size={24} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h4 className="font-syne font-black text-base text-foreground truncate">Welcome back, {studentName}! 👋</h4>
-                <p className="text-xs text-muted-foreground mt-0.5 font-semibold font-mono tracking-tight">PRN Number: {studentPrn}</p>
-              </div>
-            </div>
-          )}
-        </div>
 
         {/* Shop Status Banner */}
         <div className="animate-fade-in-up">
@@ -410,7 +272,7 @@ export default function StudentDashboard() {
         {uploadedFiles.map(file => (
           <div key={file.temp_id} className="bg-white rounded-3xl border border-input p-6 space-y-5 animate-fade-in-up shadow-sm">
             {/* Header info */}
-            <div className="flex items-center gap-4 border-b border-gray-100 pb-4">
+            <div className="flex items-center gap-4">
               <div className="p-3 bg-secondary rounded-2xl">
                  <FileTypeIcon type={file.file_type} />
               </div>
@@ -431,32 +293,6 @@ export default function StudentDashboard() {
               >
                 <X size={18} />
               </button>
-            </div>
-
-            {/* Print settings */}
-            <div className="grid grid-cols-2 gap-4 border-t border-secondary pt-4">
-              <div>
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">Color Type</label>
-                <div className="flex bg-secondary p-1 rounded-xl">
-                   <button onClick={() => updateFile(file.temp_id, { print_type: 'bw' })} className={`flex-1 text-xs font-bold py-2 rounded-lg transition uppercase ${file.print_type === 'bw' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>B&W</button>
-                   <button onClick={() => updateFile(file.temp_id, { print_type: 'color' })} className={`flex-1 text-xs font-bold py-2 rounded-lg transition uppercase ${file.print_type === 'color' ? 'bg-white shadow-sm text-blue-600' : 'text-muted-foreground hover:text-foreground'}`}>Color</button>
-                </div>
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">Print Sides</label>
-                <div className="flex bg-secondary p-1 rounded-xl">
-                   <button onClick={() => updateFile(file.temp_id, { sides: 'single' })} className={`flex-1 text-[10px] font-bold py-2 rounded-lg transition uppercase ${file.sides === 'single' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>Single Page</button>
-                   <button onClick={() => updateFile(file.temp_id, { sides: 'double' })} className={`flex-1 text-[10px] font-bold py-2 rounded-lg transition uppercase ${file.sides === 'double' ? 'bg-white shadow-sm text-blue-600' : 'text-muted-foreground hover:text-foreground'}`}>Front & Back</button>
-                </div>
-              </div>
-              <div className="col-span-2">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">Number of Copies</label>
-                <div className="flex items-center gap-3 bg-secondary p-2 rounded-xl">
-                   <button onClick={() => updateFile(file.temp_id, { copies: Math.max(1, file.copies - 1) })} className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-muted-foreground hover:text-foreground transition hover:bg-slate-50"><Minus size={16}/></button>
-                   <div className="flex-1 text-center font-black text-lg">{file.copies}</div>
-                   <button onClick={() => updateFile(file.temp_id, { copies: file.copies + 1 })} className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-muted-foreground hover:text-foreground transition hover:bg-slate-50"><Plus size={16}/></button>
-                </div>
-              </div>
             </div>
           </div>
         ))}
@@ -513,8 +349,8 @@ export default function StudentDashboard() {
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Library Print Total</p>
-                  <p className="font-syne font-black text-3xl text-foreground">₹{priceResult.total_amount}</p>
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Queue Status</p>
+                  <p className="font-syne font-black text-2xl text-green-600">Ready to Send</p>
                 </div>
                 <div className="text-right">
                    <p className="text-[10px] font-bold text-blue-primary uppercase tracking-widest mb-1">Files: {uploadedFiles.length}</p>

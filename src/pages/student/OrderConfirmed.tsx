@@ -52,6 +52,14 @@ export default function OrderConfirmed() {
       setError('Name is required.');
       return;
     }
+    if (!studentPrn.trim()) {
+      setError('PRN is required.');
+      return;
+    }
+    if (!/^\d{7}$/.test(studentPrn.trim())) {
+      setError('PRN must be exactly 7 digits.');
+      return;
+    }
     if (!amountPaid.trim() || isNaN(Number(amountPaid)) || Number(amountPaid) < 0) {
       setError('Please enter a valid amount.');
       return;
@@ -61,10 +69,20 @@ export default function OrderConfirmed() {
     setError('');
     try {
       const currentMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"
+      
+      // Update order details in Convex
+      await DB.updateOrderDetails(
+        order.order_id,
+        studentName.trim(),
+        studentPrn.trim(),
+        Number(amountPaid)
+      );
+
+      // Save payment record log
       await DB.savePaymentRecord({
-        print_id: order.student_print_id, // Link to print ID
+        print_id: studentPrn.trim(),
         name: studentName.trim(),
-        prn: studentPrn.trim() || undefined,
+        prn: studentPrn.trim(),
         amount_paid: Number(amountPaid),
         month: currentMonth,
       });
@@ -204,13 +222,15 @@ export default function OrderConfirmed() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">PRN / Roll Number (Optional)</label>
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">PRN Number (7 Digits) *</label>
                 <input
                   type="text"
+                  maxLength={7}
                   placeholder="e.g. 1234567"
                   value={studentPrn}
-                  onChange={e => setStudentPrn(e.target.value)}
+                  onChange={e => setStudentPrn(e.target.value.replace(/\D/g, ''))}
                   className="w-full px-4 py-2.5 rounded-xl border border-input bg-secondary/30 focus:ring-2 focus:ring-blue-primary outline-none text-sm font-semibold"
+                  required
                 />
               </div>
 

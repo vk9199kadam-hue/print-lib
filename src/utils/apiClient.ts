@@ -238,6 +238,10 @@ export const ApiClient = {
     return await convex.mutation(api.orders.updateOrderStatus, { order_id, print_status });
   },
 
+  async updateOrderDetails(order_id: string, student_name: string, student_print_id: string, total_amount: number): Promise<boolean> {
+    return await convex.mutation(api.orders.updateOrderDetails, { order_id, student_name, student_print_id, total_amount });
+  },
+
   async deleteOrder(id: string): Promise<boolean> {
     return await convex.mutation(api.orders.deleteOrder, { id });
   },
