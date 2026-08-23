@@ -521,17 +521,23 @@ export const ApiClient = {
 
   async getFile(key: string): Promise<string | null> {
     if (!key) return null;
-    // Handle local fallback keys from offline uploads
-    if (key.startsWith('local_')) {
-      const localData = localStorage.getItem('local_file_' + key.replace('local_', ''));
-      return localData || null;
+
+    // 1. First check local storage backup for instant access
+    const cleanKey = key.replace('local_', '');
+    const localBackup = localStorage.getItem('local_file_' + cleanKey) || localStorage.getItem('local_file_' + key);
+
+    // 2. Query Convex Cloud if key is a cloud storage ID
+    if (!key.startsWith('local_')) {
+      try {
+        const cloudUrl = await convex.query(api.files.getFileUrl, { storageId: key });
+        if (cloudUrl) return cloudUrl;
+      } catch (err) {
+        console.warn("getFile from Convex failed for storageId:", key, err);
+      }
     }
-    try {
-      return await convex.query(api.files.getFileUrl, { storageId: key });
-    } catch (err) {
-      console.warn("getFile failed for storageId:", key, err);
-      return null;
-    }
+
+    // 3. Fallback to local backup copy
+    return localBackup || null;
   },
 
   async deleteFile(key: string) {

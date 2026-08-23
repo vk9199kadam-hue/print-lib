@@ -18,6 +18,21 @@ export async function uploadFileToCloud(file: File, key: string): Promise<string
     }
 
     const { storageId } = await response.json();
+
+    // Cache local backup copy so file is guaranteed downloadable in any network condition
+    try {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (reader.result) {
+          try {
+            localStorage.setItem('local_file_' + storageId, reader.result as string);
+            localStorage.setItem('local_file_' + key, reader.result as string);
+          } catch (e) { /* ignore storage quota limit */ }
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (e) { /* ignore */ }
+
     return storageId;
   } catch (err) {
     console.warn("Cloud upload failed or offline, creating resilient local storage key fallback:", err);
@@ -26,7 +41,7 @@ export async function uploadFileToCloud(file: File, key: string): Promise<string
       reader.onloadend = () => {
         const base64 = reader.result as string;
         try {
-          localStorage.setItem('local_file_' + key, base64.slice(0, 300000));
+          localStorage.setItem('local_file_' + key, base64);
         } catch (e) { /* ignore quota limits */ }
         resolve('local_' + key);
       };
@@ -47,6 +62,16 @@ export async function deleteFileFromCloud(storageId: string): Promise<void> {
 
 export async function downloadFile(url: string, filename: string): Promise<void> {
   try {
+    if (url.startsWith('data:')) {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return;
+    }
+
     const response = await fetch(url);
     const blob = await response.blob();
     const blobUrl = window.URL.createObjectURL(blob);
