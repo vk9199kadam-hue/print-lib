@@ -187,7 +187,7 @@ export const DB = {
   async updateLibrarySettings(data: { is_open: boolean; closing_message: string; standard_hours?: string }) {
     return ApiClient.updateLibrarySettings(data);
   },
-  async savePaymentRecord(data: { print_id: string; name: string; prn?: string; amount_paid: number; month: string }) {
+  async savePaymentRecord(data: { print_id: string; name: string; prn?: string; amount_paid: number; payment_type?: string; month: string }) {
     return ApiClient.savePaymentRecord(data);
   },
   async getPaymentRecords(month?: string) {

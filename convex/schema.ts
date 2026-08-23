@@ -139,6 +139,7 @@ export default defineSchema({
     name: v.string(),
     prn: v.optional(v.string()),
     amount_paid: v.number(),
+    payment_type: v.optional(v.string()), // "online" | "xerox"
     month: v.string(),
     created_at: v.number(),
   })

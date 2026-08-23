@@ -1,18 +1,20 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
-// Save a payment record submitted by the student
+// Save a payment record submitted by the student or shopkeeper (online vs xerox)
 export const savePaymentRecord = mutation({
   args: {
     print_id: v.string(),
     name: v.string(),
     prn: v.optional(v.string()),
     amount_paid: v.number(),
+    payment_type: v.optional(v.string()),
     month: v.string(),
   },
   handler: async (ctx, args) => {
     const recordId = await ctx.db.insert("payment_records", {
       ...args,
+      payment_type: args.payment_type || "online",
       created_at: Date.now(),
     });
     return recordId;

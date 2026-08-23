@@ -384,7 +384,7 @@ export const ApiClient = {
     return await convex.mutation(api.settings.updatePricing, { pricing });
   },
 
-  async savePaymentRecord(data: { print_id: string; name: string; prn?: string; amount_paid: number; month: string }): Promise<string> {
+  async savePaymentRecord(data: { print_id: string; name: string; prn?: string; amount_paid: number; payment_type?: string; month: string }): Promise<string> {
     return await convex.mutation(api.paymentRecords.savePaymentRecord, data);
   },
 

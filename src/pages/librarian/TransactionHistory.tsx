@@ -10,6 +10,7 @@ interface PaymentRecord {
   name: string;
   prn?: string;
   amount_paid: number;
+  payment_type?: string;
   month: string;
   created_at: number;
 }
@@ -28,8 +29,9 @@ export default function TransactionHistory() {
   const [records, setRecords] = useState<PaymentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'online' | 'xerox'>('all');
   const [selectedMonth, setSelectedMonth] = useState<string>(
-    new Date().toISOString().slice(0, 7) // e.g. "2026-07"
+    new Date().toISOString().slice(0, 7) // e.g. "2026-08"
   );
 
   // Generate selector options for the past 12 months
@@ -60,6 +62,8 @@ export default function TransactionHistory() {
   }, [selectedMonth]);
 
   const filtered = records.filter(r => {
+    const pType = r.payment_type || 'online';
+    if (typeFilter !== 'all' && pType !== typeFilter) return false;
     const q = search.toLowerCase();
     if (!q) return true;
     return (
@@ -69,10 +73,16 @@ export default function TransactionHistory() {
     );
   });
 
+  // Calculate statistics breakdown
+  const onlineTotal = records.filter(r => (r.payment_type || 'online') === 'online').reduce((s, r) => s + (r.amount_paid || 0), 0);
+  const xeroxTotal = records.filter(r => (r.payment_type || 'online') === 'xerox').reduce((s, r) => s + (r.amount_paid || 0), 0);
+  const grandTotal = records.reduce((s, r) => s + (r.amount_paid || 0), 0);
+
   const handleDownloadExcel = () => {
     const rows = filtered.map(r => ({
       'Date & Time': formatDate(r.created_at),
       'Print ID': r.print_id || '-',
+      'Print Type': (r.payment_type || 'online').toLowerCase() === 'xerox' ? 'Xerox (Physical)' : 'Online Print',
       'Student Name': r.name || '-',
       'PRN / Roll Number': r.prn || '-',
       'Amount Paid (₹)': r.amount_paid ?? 0,
@@ -81,10 +91,11 @@ export default function TransactionHistory() {
 
     const ws = XLSX.utils.json_to_sheet(rows);
 
-    // Set column widths
+    // Set column widths for clean spreadsheet layout
     ws['!cols'] = [
       { wch: 22 }, // Date & Time
-      { wch: 18 }, // Print ID
+      { wch: 16 }, // Print ID
+      { wch: 18 }, // Print Type
       { wch: 25 }, // Name
       { wch: 18 }, // PRN
       { wch: 16 }, // Amount
@@ -133,7 +144,7 @@ export default function TransactionHistory() {
             <div>
               <h1 className="text-3xl font-black text-slate-900 tracking-tight">Payment Records Log</h1>
               <p className="text-sm text-slate-500 font-medium mt-1">
-                Student self-service printing payment submissions
+                Unified transaction history: Online Prints & Physical Xerox Entries
               </p>
             </div>
             
@@ -174,9 +185,9 @@ export default function TransactionHistory() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
                 { label: 'Total Records', value: records.length, color: 'text-slate-800' },
-                { label: 'Total Revenue (₹)', value: `₹${records.reduce((s, r) => s + (r.amount_paid || 0), 0).toFixed(2)}`, color: 'text-emerald-600' },
-                { label: 'Average Pay (₹)', value: `₹${records.length > 0 ? (records.reduce((s, r) => s + (r.amount_paid || 0), 0) / records.length).toFixed(2) : '0.00'}`, color: 'text-blue-600' },
-                { label: 'Reporting Month', value: selectedMonth, color: 'text-slate-500' },
+                { label: 'Total Revenue (₹)', value: `₹${grandTotal.toFixed(2)}`, color: 'text-emerald-600' },
+                { label: 'Online Revenue (₹)', value: `₹${onlineTotal.toFixed(2)}`, color: 'text-blue-600' },
+                { label: 'Xerox Revenue (₹)', value: `₹${xeroxTotal.toFixed(2)}`, color: 'text-purple-600' },
               ].map(stat => (
                 <div key={stat.label} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
@@ -186,15 +197,40 @@ export default function TransactionHistory() {
             </div>
           )}
 
-          {/* Search */}
-          <div className="relative">
-            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              placeholder="Search by student name, PRN or print ID..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-slate-200 bg-white shadow-sm focus:border-blue-500 outline-none transition font-medium text-sm"
-            />
+          {/* Filter & Search Toolbar */}
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            {/* Filter Tabs */}
+            <div className="bg-white p-1 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-1 w-full sm:w-auto">
+              <button
+                onClick={() => setTypeFilter('all')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${typeFilter === 'all' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900'}`}
+              >
+                All Records
+              </button>
+              <button
+                onClick={() => setTypeFilter('online')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${typeFilter === 'online' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-blue-600'}`}
+              >
+                Online Prints
+              </button>
+              <button
+                onClick={() => setTypeFilter('xerox')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${typeFilter === 'xerox' ? 'bg-emerald-600 text-white' : 'text-slate-500 hover:text-emerald-600'}`}
+              >
+                Xerox Prints
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <div className="relative flex-1 w-full">
+              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                placeholder="Search by student name, PRN or print ID..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 bg-white shadow-sm focus:border-blue-500 outline-none transition font-medium text-sm"
+              />
+            </div>
           </div>
 
           {/* Table */}
@@ -205,7 +241,7 @@ export default function TransactionHistory() {
             </div>
           ) : filtered.length === 0 ? (
             <div className="bg-white rounded-3xl p-20 text-center border border-dashed border-slate-200">
-              <p className="font-bold text-slate-400 uppercase tracking-widest text-xs">No records found</p>
+              <p className="font-bold text-slate-400 uppercase tracking-widest text-xs">No transaction records found</p>
             </div>
           ) : (
             <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
@@ -215,38 +251,53 @@ export default function TransactionHistory() {
                     <tr className="bg-slate-50 border-b border-slate-100">
                       <th className="text-left px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Date & Time</th>
                       <th className="text-left px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Print ID</th>
+                      <th className="text-left px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Type</th>
                       <th className="text-left px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Student Name</th>
                       <th className="text-left px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">PRN / Roll No.</th>
                       <th className="text-right px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Amount Paid</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
-                    {filtered.map((record, idx) => (
-                      <tr
-                        key={record._id}
-                        className={`hover:bg-blue-50/40 transition-colors ${idx % 2 === 0 ? '' : 'bg-slate-50/30'}`}
-                      >
-                        <td className="px-5 py-4 text-xs text-slate-500 font-medium whitespace-nowrap">
-                          {formatDate(record.created_at)}
-                        </td>
-                        <td className="px-5 py-4">
-                          <span className="font-mono text-xs font-black text-blue-700 bg-blue-50 px-2 py-1 rounded-lg whitespace-nowrap">
-                            {record.print_id || '-'}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4">
-                          <p className="font-black text-slate-800 text-sm uppercase tracking-tight">{record.name}</p>
-                        </td>
-                        <td className="px-5 py-4">
-                          <span className="font-mono text-xs font-semibold text-slate-600">
-                            {record.prn || '—'}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4 text-right">
-                          <span className="font-black text-emerald-700 text-base">₹{record.amount_paid ?? 0}</span>
-                        </td>
-                      </tr>
-                    ))}
+                    {filtered.map((record, idx) => {
+                      const pType = (record.payment_type || 'online').toLowerCase();
+                      return (
+                        <tr
+                          key={record._id}
+                          className={`hover:bg-blue-50/40 transition-colors ${idx % 2 === 0 ? '' : 'bg-slate-50/30'}`}
+                        >
+                          <td className="px-5 py-4 text-xs text-slate-500 font-medium whitespace-nowrap">
+                            {formatDate(record.created_at)}
+                          </td>
+                          <td className="px-5 py-4">
+                            <span className="font-mono text-xs font-black text-slate-700 bg-slate-100 px-2 py-1 rounded-lg whitespace-nowrap border border-slate-200">
+                              {record.print_id || '-'}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4">
+                            {pType === 'xerox' ? (
+                              <span className="font-bold text-[10px] uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md whitespace-nowrap">
+                                📠 Xerox
+                              </span>
+                            ) : (
+                              <span className="font-bold text-[10px] uppercase tracking-wider text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-md whitespace-nowrap">
+                                📄 Online
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-5 py-4">
+                            <p className="font-black text-slate-800 text-sm uppercase tracking-tight">{record.name}</p>
+                          </td>
+                          <td className="px-5 py-4">
+                            <span className="font-mono text-xs font-semibold text-slate-600">
+                              {record.prn || '—'}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 text-right">
+                            <span className="font-black text-emerald-700 text-base">₹{record.amount_paid ?? 0}</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
