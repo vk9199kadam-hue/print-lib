@@ -2,7 +2,7 @@ import { User, librarian, Order, Pricing, Submission, FileItem } from '../types'
 import { ConvexReactClient } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 
-const convexUrl = import.meta.env.VITE_CONVEX_URL || 'https://placeholder.convex.cloud';
+const convexUrl = import.meta.env.VITE_CONVEX_URL || 'https://avid-lark-265.convex.cloud';
 const convex = new ConvexReactClient(convexUrl);
 
 export const ApiClient = {
