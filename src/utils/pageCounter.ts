@@ -32,8 +32,10 @@ export async function getPageCount(file: File): Promise<number | null> {
     try {
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      return pdf.numPages;
-    } catch { return null; }
+      return Math.max(1, pdf.numPages);
+    } catch { 
+      return Math.max(1, Math.ceil(file.size / 100000)); 
+    }
   }
 
   // 2. Images & Text
