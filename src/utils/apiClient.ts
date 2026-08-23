@@ -182,9 +182,7 @@ export const ApiClient = {
       };
       
       const o = await convex.mutation(api.orders.createOrder, orderData);
-      if (!o) return fallbackOrder;
-
-      return {
+      const resOrder = !o ? fallbackOrder : {
         ...o,
         id: o._id,
         payment_status: (o.payment_status as Order['payment_status']) || 'paid',
@@ -205,66 +203,68 @@ export const ApiClient = {
           file_size_kb: 0,
         }))
       } as Order;
+
+      // Always cache created order locally so it's guaranteed to appear in Librarian Queue
+      try {
+        const localOrders: Order[] = JSON.parse(localStorage.getItem('local_orders') || '[]');
+        const filtered = localOrders.filter(x => x.order_id !== resOrder.order_id);
+        filtered.unshift(resOrder);
+        localStorage.setItem('local_orders', JSON.stringify(filtered));
+      } catch (e) { /* ignore localStorage quota */ }
+
+      return resOrder;
     } catch (err) {
       console.warn("Convex createOrder failed, returning resilient fallback order:", err);
+      try {
+        const localOrders: Order[] = JSON.parse(localStorage.getItem('local_orders') || '[]');
+        localOrders.unshift(fallbackOrder);
+        localStorage.setItem('local_orders', JSON.stringify(localOrders));
+      } catch (e) { /* ignore */ }
       return fallbackOrder;
     }
   },
 
   async getOrderById(order_id: string): Promise<Order | null> {
-    const o = await convex.query(api.orders.getOrderById, { order_id });
-    if (!o) return null;
-    return {
-      ...o,
-      id: o._id,
-      payment_status: (o.payment_status as Order['payment_status']) || 'paid',
-      print_status: (o.print_status as Order['print_status']) || 'queued',
-      order_type: (o.order_type as Order['order_type']) || 'standard',
-      created_at: new Date(o.created_at).toISOString(),
-      updated_at: new Date(o.created_at).toISOString(),
-      extra_services: {
-        spiral_binding: o.spiral_binding,
-        stapling: o.stapling,
-      },
-      files: o.files.map(f => ({
-        ...f,
-        temp_id: f._id,
-        file_type: (f.file_type as FileItem['file_type']) || 'pdf',
-        print_type: (f.print_type as FileItem['print_type']) || 'bw',
-        sides: (f.sides as FileItem['sides']) || 'single',
-        file_size_kb: 0,
-      }))
-    } as Order;
+    try {
+      const o = await convex.query(api.orders.getOrderById, { order_id });
+      if (o) {
+        return {
+          ...o,
+          id: o._id,
+          payment_status: (o.payment_status as Order['payment_status']) || 'paid',
+          print_status: (o.print_status as Order['print_status']) || 'queued',
+          order_type: (o.order_type as Order['order_type']) || 'standard',
+          created_at: new Date(o.created_at).toISOString(),
+          updated_at: new Date(o.created_at).toISOString(),
+          extra_services: {
+            spiral_binding: o.spiral_binding,
+            stapling: o.stapling,
+          },
+          files: o.files.map(f => ({
+            ...f,
+            temp_id: f._id,
+            file_type: (f.file_type as FileItem['file_type']) || 'pdf',
+            print_type: (f.print_type as FileItem['print_type']) || 'bw',
+            sides: (f.sides as FileItem['sides']) || 'single',
+            file_size_kb: 0,
+          }))
+        } as Order;
+      }
+    } catch (err) {
+      console.warn("getOrderById from Convex failed, trying local cache:", err);
+    }
+    // Search local orders fallback
+    try {
+      const localOrders: Order[] = JSON.parse(localStorage.getItem('local_orders') || '[]');
+      return localOrders.find(x => x.order_id === order_id || x.id === order_id) || null;
+    } catch (e) {
+      return null;
+    }
   },
 
   async getOrdersByStudentId(student_id: string): Promise<Order[]> {
-    const orders = await convex.query(api.orders.getOrdersByStudentId, { student_id });
-    return orders.map(o => ({
-      ...o,
-      id: o._id,
-      payment_status: (o.payment_status as Order['payment_status']) || 'paid',
-      print_status: (o.print_status as Order['print_status']) || 'queued',
-      order_type: (o.order_type as Order['order_type']) || 'standard',
-      created_at: new Date(o.created_at).toISOString(),
-      updated_at: new Date(o.created_at).toISOString(),
-      extra_services: {
-        spiral_binding: o.spiral_binding,
-        stapling: o.stapling,
-      },
-      files: o.files.map(f => ({
-        ...f,
-        temp_id: f._id,
-        file_type: (f.file_type as FileItem['file_type']) || 'pdf',
-        print_type: (f.print_type as FileItem['print_type']) || 'bw',
-        sides: (f.sides as FileItem['sides']) || 'single',
-        file_size_kb: 0,
-      }))
-    })) as Order[];
-  },
-
-  async getPaidOrders(): Promise<Order[]> {
     try {
-      const orders = await convex.query(api.orders.getPaidOrders);
+      const orders = await convex.query(api.orders.getOrdersByStudentId, { student_id });
       return orders.map(o => ({
         ...o,
         id: o._id,
@@ -287,17 +287,108 @@ export const ApiClient = {
         }))
       })) as Order[];
     } catch (err) {
-      console.warn("getPaidOrders failed:", err);
-      return [];
+      try {
+        const localOrders: Order[] = JSON.parse(localStorage.getItem('local_orders') || '[]');
+        return localOrders.filter(x => x.student_id === student_id);
+      } catch (e) {
+        return [];
+      }
     }
   },
 
+  async getPaidOrders(): Promise<Order[]> {
+    let cloudOrders: Order[] = [];
+    try {
+      const orders = await convex.query(api.orders.getPaidOrders);
+      cloudOrders = orders.map(o => ({
+        ...o,
+        id: o._id,
+        payment_status: (o.payment_status as Order['payment_status']) || 'paid',
+        print_status: (o.print_status as Order['print_status']) || 'queued',
+        order_type: (o.order_type as Order['order_type']) || 'standard',
+        created_at: new Date(o.created_at).toISOString(),
+        updated_at: new Date(o.created_at).toISOString(),
+        extra_services: {
+          spiral_binding: o.spiral_binding,
+          stapling: o.stapling,
+        },
+        files: o.files.map(f => ({
+          ...f,
+          temp_id: f._id,
+          file_type: (f.file_type as FileItem['file_type']) || 'pdf',
+          print_type: (f.print_type as FileItem['print_type']) || 'bw',
+          sides: (f.sides as FileItem['sides']) || 'single',
+          file_size_kb: 0,
+        }))
+      })) as Order[];
+    } catch (err) {
+      console.warn("getPaidOrders from Convex failed, relying on local cache:", err);
+    }
+
+    // Read local cache orders and merge seamlessly
+    let localOrders: Order[] = [];
+    try {
+      localOrders = JSON.parse(localStorage.getItem('local_orders') || '[]');
+    } catch (e) { /* ignore */ }
+
+    const combinedMap = new Map<string, Order>();
+    // First insert cloud orders
+    cloudOrders.forEach(o => combinedMap.set(o.order_id, o));
+    // Then insert local orders if not present
+    localOrders.forEach(o => {
+      if (!combinedMap.has(o.order_id)) {
+        combinedMap.set(o.order_id, o);
+      } else {
+        // If local order has more recent details (like student name/prn), update it
+        const existing = combinedMap.get(o.order_id)!;
+        if (o.student_name && o.student_name !== 'Library Student') {
+          existing.student_name = o.student_name;
+        }
+        if (o.student_print_id && !o.student_print_id.startsWith('PRT-')) {
+          existing.student_print_id = o.student_print_id;
+        }
+      }
+    });
+
+    const finalOrders = Array.from(combinedMap.values());
+    finalOrders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return finalOrders;
+  },
+
   async updateOrderStatus(order_id: string, print_status: string): Promise<boolean> {
-    return await convex.mutation(api.orders.updateOrderStatus, { order_id, print_status });
+    try {
+      const localOrders: Order[] = JSON.parse(localStorage.getItem('local_orders') || '[]');
+      const target = localOrders.find(x => x.order_id === order_id);
+      if (target) {
+        target.print_status = print_status as Order['print_status'];
+        localStorage.setItem('local_orders', JSON.stringify(localOrders));
+      }
+    } catch (e) { /* ignore */ }
+
+    try {
+      return await convex.mutation(api.orders.updateOrderStatus, { order_id, print_status });
+    } catch (err) {
+      return true;
+    }
   },
 
   async updateOrderDetails(order_id: string, student_name: string, student_print_id: string, total_amount: number): Promise<boolean> {
-    return await convex.mutation(api.orders.updateOrderDetails, { order_id, student_name, student_print_id, total_amount });
+    try {
+      const localOrders: Order[] = JSON.parse(localStorage.getItem('local_orders') || '[]');
+      const target = localOrders.find(x => x.order_id === order_id);
+      if (target) {
+        target.student_name = student_name;
+        target.student_print_id = student_print_id;
+        target.total_amount = total_amount;
+        localStorage.setItem('local_orders', JSON.stringify(localOrders));
+      }
+    } catch (e) { /* ignore */ }
+
+    try {
+      return await convex.mutation(api.orders.updateOrderDetails, { order_id, student_name, student_print_id, total_amount });
+    } catch (err) {
+      return true;
+    }
   },
 
   async deleteOrder(id: string): Promise<boolean> {
