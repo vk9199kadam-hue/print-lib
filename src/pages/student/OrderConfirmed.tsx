@@ -35,9 +35,21 @@ export default function OrderConfirmed() {
     fetchLibrary();
   }, []);
 
+  useEffect(() => {
+    if (!order) {
+      navigate('/student/dashboard', { replace: true });
+    }
+  }, [order, navigate]);
+
   if (!order) { 
-    navigate('/student/upload'); 
-    return null; 
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="text-center space-y-3 bg-white p-8 rounded-3xl border border-slate-200 shadow-md">
+          <Loader2 className="animate-spin text-blue-600 mx-auto" size={36} />
+          <p className="text-xs font-bold text-slate-700 uppercase tracking-widest">Redirecting to Dashboard...</p>
+        </div>
+      </div>
+    ); 
   }
 
   const copyText = (text: string, key: string) => {
