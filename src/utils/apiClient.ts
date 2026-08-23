@@ -385,10 +385,45 @@ export const ApiClient = {
   },
 
   async savePaymentRecord(data: { print_id: string; name: string; prn?: string; amount_paid: number; payment_type?: string; month: string }): Promise<string> {
-    return await convex.mutation(api.paymentRecords.savePaymentRecord, data);
+    const record = {
+      _id: 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+      ...data,
+      created_at: Date.now(),
+    };
+    try {
+      const res = await convex.mutation(api.paymentRecords.savePaymentRecord, data);
+      const existing = JSON.parse(localStorage.getItem('local_payment_records') || '[]');
+      const filtered = existing.filter((r: any) => r.print_id !== data.print_id);
+      filtered.unshift({ ...record, _id: res || record._id });
+      localStorage.setItem('local_payment_records', JSON.stringify(filtered));
+      return res || record._id;
+    } catch (err) {
+      console.warn("Convex savePaymentRecord fallback to localStorage:", err);
+      const existing = JSON.parse(localStorage.getItem('local_payment_records') || '[]');
+      existing.unshift(record);
+      localStorage.setItem('local_payment_records', JSON.stringify(existing));
+      return record._id;
+    }
   },
 
   async getPaymentRecords(month?: string) {
-    return await convex.query(api.paymentRecords.getPaymentRecords, { month });
+    let convexRecords: any[] = [];
+    try {
+      convexRecords = await convex.query(api.paymentRecords.getPaymentRecords, { month }) || [];
+    } catch (e) {
+      console.warn("Could not fetch remote payment records from Convex:", e);
+    }
+    const localRecords = JSON.parse(localStorage.getItem('local_payment_records') || '[]');
+    const filteredLocal = month ? localRecords.filter((r: any) => r.month === month) : localRecords;
+    
+    const combined = [...convexRecords, ...filteredLocal];
+    const seen = new Set();
+    const unique = combined.filter(r => {
+      const id = r.print_id || r._id;
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+    return unique.sort((a: any, b: any) => b.created_at - a.created_at);
   }
 };

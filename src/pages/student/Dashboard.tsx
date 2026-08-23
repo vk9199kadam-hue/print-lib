@@ -193,15 +193,22 @@ export default function StudentDashboard() {
       const qr = await generateQR(tempId);
 
       const filesWithPrices = uploadedFiles.map(f => {
+        const isColor = f.print_type === 'color';
+        const bwPgs = isColor ? 0 : (f.page_count || 1);
+        const colPgs = isColor ? (f.page_count || 1) : 0;
+        const itemPrice = calcFilePrice(f, pricing);
         return { 
           ...f, 
-          bw_pages: f.page_count || 1, 
-          color_pages: 0, 
-          file_price: 0 
+          bw_pages: bwPgs, 
+          color_pages: colPgs, 
+          file_price: itemPrice 
         };
       });
 
-      const totalPagesCount = filesWithPrices.reduce((s, f) => s + ((f.page_count || 1) * f.copies), 0);
+      const totalBwPages = filesWithPrices.reduce((s, f) => s + (f.bw_pages * f.copies), 0);
+      const totalColorPages = filesWithPrices.reduce((s, f) => s + (f.color_pages * f.copies), 0);
+      const totalPagesCount = totalBwPages + totalColorPages;
+      const totalOrderAmount = priceResult ? priceResult.total : filesWithPrices.reduce((s, f) => s + f.file_price, 0);
 
       const order = await DB.createOrder({
         order_id: tempId,
@@ -210,13 +217,13 @@ export default function StudentDashboard() {
         student_name: 'Library Student',
         order_type: 'standard',
         files: filesWithPrices.map(({ base64, ...rest }) => rest as FileItem),
-        total_bw_pages: totalPagesCount,
-        total_color_pages: 0,
+        total_bw_pages: totalBwPages,
+        total_color_pages: totalColorPages,
         total_pages: totalPagesCount,
         extra_services: extras,
-        service_fee: 0,
-        subtotal: 0,
-        total_amount: 0,
+        service_fee: priceResult ? priceResult.serviceFee : 0,
+        subtotal: priceResult ? priceResult.subtotal : totalOrderAmount,
+        total_amount: totalOrderAmount,
         payment_status: 'paid',
         print_status: 'queued',
         qr_code: qr
@@ -371,6 +378,73 @@ export default function StudentDashboard() {
                   >
                     <X size={18} />
                   </button>
+                </div>
+
+                {/* Print Options: B&W / Color, Sides, Copies */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-slate-100 text-xs">
+                  {/* Print Mode (B&W vs Color) */}
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-1.5">Print Color</label>
+                    <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                      <button
+                        type="button"
+                        onClick={() => updateFile(file.temp_id, { print_type: 'bw' })}
+                        className={`flex-1 py-1.5 rounded-lg font-bold text-xs transition ${file.print_type === 'bw' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+                      >
+                        B&W (₹{pricing.bw_rate}/pg)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updateFile(file.temp_id, { print_type: 'color' })}
+                        className={`flex-1 py-1.5 rounded-lg font-bold text-xs transition ${file.print_type === 'color' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+                      >
+                        Color (₹{pricing.color_rate}/pg)
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Sides (Single vs Double) */}
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-1.5">Sides</label>
+                    <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                      <button
+                        type="button"
+                        onClick={() => updateFile(file.temp_id, { sides: 'single' })}
+                        className={`flex-1 py-1.5 rounded-lg font-bold text-xs transition ${file.sides === 'single' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+                      >
+                        Single
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updateFile(file.temp_id, { sides: 'double' })}
+                        className={`flex-1 py-1.5 rounded-lg font-bold text-xs transition ${file.sides === 'double' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+                      >
+                        Double
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Copies counter */}
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-1.5">Copies</label>
+                    <div className="flex items-center justify-between bg-slate-100 p-1 rounded-xl">
+                      <button
+                        type="button"
+                        onClick={() => updateFile(file.temp_id, { copies: Math.max(1, (file.copies || 1) - 1) })}
+                        className="w-7 h-7 rounded-lg bg-white text-slate-700 font-bold flex items-center justify-center shadow-sm hover:bg-slate-200"
+                      >
+                        <Minus size={14} />
+                      </button>
+                      <span className="font-black text-slate-800 text-sm">{file.copies || 1}</span>
+                      <button
+                        type="button"
+                        onClick={() => updateFile(file.temp_id, { copies: (file.copies || 1) + 1 })}
+                        className="w-7 h-7 rounded-lg bg-white text-slate-700 font-bold flex items-center justify-center shadow-sm hover:bg-slate-200"
+                      >
+                        <Plus size={14} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
