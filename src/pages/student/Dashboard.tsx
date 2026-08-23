@@ -208,7 +208,7 @@ export default function StudentDashboard() {
       const totalBwPages = filesWithPrices.reduce((s, f) => s + (f.bw_pages * f.copies), 0);
       const totalColorPages = filesWithPrices.reduce((s, f) => s + (f.color_pages * f.copies), 0);
       const totalPagesCount = totalBwPages + totalColorPages;
-      const totalOrderAmount = priceResult ? priceResult.total : filesWithPrices.reduce((s, f) => s + f.file_price, 0);
+      const totalOrderAmount = priceResult ? (priceResult.total_amount ?? 0) : filesWithPrices.reduce((s, f) => s + f.file_price, 0);
 
       const order = await DB.createOrder({
         order_id: tempId,
@@ -221,8 +221,8 @@ export default function StudentDashboard() {
         total_color_pages: totalColorPages,
         total_pages: totalPagesCount,
         extra_services: extras,
-        service_fee: priceResult ? priceResult.serviceFee : 0,
-        subtotal: priceResult ? priceResult.subtotal : totalOrderAmount,
+        service_fee: priceResult ? (priceResult.service_fee ?? 0) : 0,
+        subtotal: priceResult ? (priceResult.subtotal ?? totalOrderAmount) : totalOrderAmount,
         total_amount: totalOrderAmount,
         payment_status: 'paid',
         print_status: 'queued',
