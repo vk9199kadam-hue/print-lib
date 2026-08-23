@@ -263,28 +263,33 @@ export const ApiClient = {
   },
 
   async getPaidOrders(): Promise<Order[]> {
-    const orders = await convex.query(api.orders.getPaidOrders);
-    return orders.map(o => ({
-      ...o,
-      id: o._id,
-      payment_status: (o.payment_status as Order['payment_status']) || 'paid',
-      print_status: (o.print_status as Order['print_status']) || 'queued',
-      order_type: (o.order_type as Order['order_type']) || 'standard',
-      created_at: new Date(o.created_at).toISOString(),
-      updated_at: new Date(o.created_at).toISOString(),
-      extra_services: {
-        spiral_binding: o.spiral_binding,
-        stapling: o.stapling,
-      },
-      files: o.files.map(f => ({
-        ...f,
-        temp_id: f._id,
-        file_type: (f.file_type as FileItem['file_type']) || 'pdf',
-        print_type: (f.print_type as FileItem['print_type']) || 'bw',
-        sides: (f.sides as FileItem['sides']) || 'single',
-        file_size_kb: 0,
-      }))
-    })) as Order[];
+    try {
+      const orders = await convex.query(api.orders.getPaidOrders);
+      return orders.map(o => ({
+        ...o,
+        id: o._id,
+        payment_status: (o.payment_status as Order['payment_status']) || 'paid',
+        print_status: (o.print_status as Order['print_status']) || 'queued',
+        order_type: (o.order_type as Order['order_type']) || 'standard',
+        created_at: new Date(o.created_at).toISOString(),
+        updated_at: new Date(o.created_at).toISOString(),
+        extra_services: {
+          spiral_binding: o.spiral_binding,
+          stapling: o.stapling,
+        },
+        files: o.files.map(f => ({
+          ...f,
+          temp_id: f._id,
+          file_type: (f.file_type as FileItem['file_type']) || 'pdf',
+          print_type: (f.print_type as FileItem['print_type']) || 'bw',
+          sides: (f.sides as FileItem['sides']) || 'single',
+          file_size_kb: 0,
+        }))
+      })) as Order[];
+    } catch (err) {
+      console.warn("getPaidOrders failed:", err);
+      return [];
+    }
   },
 
   async updateOrderStatus(order_id: string, print_status: string): Promise<boolean> {
@@ -424,11 +429,27 @@ export const ApiClient = {
   },
 
   async getFile(key: string): Promise<string | null> {
-    return await convex.query(api.files.getFileUrl, { storageId: key });
+    if (!key) return null;
+    // Handle local fallback keys from offline uploads
+    if (key.startsWith('local_')) {
+      const localData = localStorage.getItem('local_file_' + key.replace('local_', ''));
+      return localData || null;
+    }
+    try {
+      return await convex.query(api.files.getFileUrl, { storageId: key });
+    } catch (err) {
+      console.warn("getFile failed for storageId:", key, err);
+      return null;
+    }
   },
 
   async deleteFile(key: string) {
-    await convex.mutation(api.files.deleteFile, { storageId: key });
+    if (!key || key.startsWith('local_')) return;
+    try {
+      await convex.mutation(api.files.deleteFile, { storageId: key });
+    } catch (err) {
+      console.warn("deleteFile failed:", key, err);
+    }
   },
 
   async cleanOrphanedFiles(): Promise<boolean> {
