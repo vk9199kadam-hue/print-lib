@@ -282,12 +282,20 @@ export const ApiClient = {
 
   // --- LIBRARY SETTINGS ---
   async getLibrarySettings(): Promise<{ is_open: boolean; closing_message?: string; standard_hours?: string }> {
-    const settings = await convex.query(api.settings.getLibrarySettings);
-    return {
-      is_open: settings.is_open,
-      closing_message: settings.closing_message,
-      standard_hours: settings.standard_hours,
-    };
+    try {
+      const settings = await convex.query(api.settings.getLibrarySettings);
+      if (!settings) {
+        return { is_open: true, closing_message: '', standard_hours: '10:00 AM to 8:00 PM' };
+      }
+      return {
+        is_open: settings.is_open ?? true,
+        closing_message: settings.closing_message || '',
+        standard_hours: settings.standard_hours || '10:00 AM to 8:00 PM',
+      };
+    } catch (e) {
+      console.warn("Could not fetch library settings, using defaults:", e);
+      return { is_open: true, closing_message: '', standard_hours: '10:00 AM to 8:00 PM' };
+    }
   },
 
   async updateLibrarySettings(data: { is_open: boolean; closing_message?: string; standard_hours?: string }): Promise<boolean> {
@@ -377,7 +385,12 @@ export const ApiClient = {
 
   // --- PRICING ---
   async getPricing(): Promise<Pricing | null> {
-    return await convex.query(api.settings.getPricing);
+    try {
+      return await convex.query(api.settings.getPricing);
+    } catch (e) {
+      console.warn("Could not fetch pricing from Convex, using fallback:", e);
+      return null;
+    }
   },
 
   async updatePricing(pricing: Pricing): Promise<boolean> {
