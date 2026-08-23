@@ -63,6 +63,10 @@ export default function StudentDashboard() {
     return calcTotal(uploadedFiles, extras, pricing);
   }, [uploadedFiles, extras, pricing]);
 
+  const canProceed = useMemo(() => {
+    return uploadedFiles.length > 0 && uploadedFiles.every(f => f.page_count > 0);
+  }, [uploadedFiles]);
+
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
   const processFile = async (file: File) => {
