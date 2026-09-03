@@ -43,10 +43,11 @@ export const cleanupOldFiles = mutation({
   handler: async (ctx) => {
     const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
     
-    const oldOrders = await ctx.db
-      .query("orders")
-      .withIndex("by_created_at", (q) => q.lt("created_at", oneDayAgo))
-      .collect();
+    // Only target completed or archived orders older than 24 hours
+    const allOrders = await ctx.db.query("orders").collect();
+    const oldOrders = allOrders.filter(
+      (o) => (o.print_status === "completed" || o.is_archived) && o.created_at < oneDayAgo
+    );
       
     let deletedCount = 0;
     

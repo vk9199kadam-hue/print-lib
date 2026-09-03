@@ -165,18 +165,18 @@ export const ApiClient = {
         department: data.department,
         receiving_date: data.receiving_date,
         files: (data.files || []).map(f => ({
-          file_name: f.file_name,
-          file_storage_key: f.file_storage_key,
-          file_type: f.file_type,
-          file_extension: f.file_extension,
-          page_count: f.page_count,
-          print_type: f.print_type,
-          color_page_ranges: f.color_page_ranges,
-          copies: f.copies,
-          sides: f.sides,
-          bw_pages: f.bw_pages,
-          color_pages: f.color_pages,
-          file_price: f.file_price,
+          file_name: f.file_name || "document.pdf",
+          file_storage_key: f.file_storage_key || "",
+          file_type: f.file_type || "pdf",
+          file_extension: f.file_extension || "",
+          page_count: f.page_count ?? 1,
+          print_type: f.print_type || "bw",
+          color_page_ranges: f.color_page_ranges || "",
+          copies: f.copies ?? 1,
+          sides: f.sides || "single",
+          bw_pages: f.bw_pages ?? 0,
+          color_pages: f.color_pages ?? 0,
+          file_price: f.file_price ?? 0,
           student_note: f.student_note || "",
         }))
       };
@@ -334,18 +334,60 @@ export const ApiClient = {
     const combinedMap = new Map<string, Order>();
     // First insert cloud orders
     cloudOrders.forEach(o => combinedMap.set(o.order_id, o));
-    // Then insert local orders if not present
-    localOrders.forEach(o => {
-      if (!combinedMap.has(o.order_id)) {
-        combinedMap.set(o.order_id, o);
+
+    // Process local orders: merge and automatically push any missing/updated orders to Convex Cloud
+    localOrders.forEach(lo => {
+      if (!combinedMap.has(lo.order_id)) {
+        combinedMap.set(lo.order_id, lo);
+        // Automatically sync missing local order to Convex Cloud so all devices (phone/other PCs) receive it
+        const orderData: any = {
+          order_id: lo.order_id,
+          student_id: lo.student_id || "",
+          student_print_id: lo.student_print_id || "",
+          student_name: lo.student_name || "Library Student",
+          total_bw_pages: lo.total_bw_pages ?? 0,
+          total_color_pages: lo.total_color_pages ?? 0,
+          total_pages: lo.total_pages ?? 0,
+          spiral_binding: lo.spiral_binding ?? false,
+          stapling: lo.stapling ?? false,
+          service_fee: lo.service_fee ?? 0,
+          subtotal: lo.subtotal ?? 0,
+          total_amount: lo.total_amount ?? 0,
+          payment_status: lo.payment_status || "paid",
+          print_status: lo.print_status || "queued",
+          qr_code: lo.qr_code || "",
+          order_type: lo.order_type || "standard",
+          files: (lo.files || []).map(f => ({
+            file_name: f.file_name || "document.pdf",
+            file_storage_key: f.file_storage_key || "",
+            file_type: f.file_type || "pdf",
+            file_extension: f.file_extension || "",
+            page_count: f.page_count ?? 1,
+            print_type: f.print_type || "bw",
+            color_page_ranges: f.color_page_ranges || "",
+            copies: f.copies ?? 1,
+            sides: f.sides || "single",
+            bw_pages: f.bw_pages ?? 0,
+            color_pages: f.color_pages ?? 0,
+            file_price: f.file_price ?? 0,
+            student_note: f.student_note || "",
+          }))
+        };
+        convex.mutation(api.orders.createOrder, orderData).catch(err => {
+          console.warn("Auto-sync local order to cloud failed:", lo.order_id, err);
+        });
       } else {
-        // If local order has more recent details (like student name/prn), update it
-        const existing = combinedMap.get(o.order_id)!;
-        if (o.student_name && o.student_name !== 'Library Student') {
-          existing.student_name = o.student_name;
-        }
-        if (o.student_print_id && !o.student_print_id.startsWith('PRT-')) {
-          existing.student_print_id = o.student_print_id;
+        // If local order has more recent student details, update local view and sync to cloud
+        const existing = combinedMap.get(lo.order_id)!;
+        if (lo.student_name && lo.student_name !== 'Library Student' && existing.student_name !== lo.student_name) {
+          existing.student_name = lo.student_name;
+          if (lo.student_print_id) existing.student_print_id = lo.student_print_id;
+          convex.mutation(api.orders.updateOrderDetails, {
+            order_id: lo.order_id,
+            student_name: lo.student_name,
+            student_print_id: lo.student_print_id || existing.student_print_id,
+            total_amount: lo.total_amount || existing.total_amount,
+          }).catch(() => {});
         }
       }
     });
