@@ -241,3 +241,22 @@ export const updateOrderDetails = mutation({
     return true;
   }
 });
+
+// Update file storage key (e.g. migrating local fallback key to cloud storageId)
+export const updateFileStorageKey = mutation({
+  args: {
+    old_key: v.string(),
+    new_key: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const files = await ctx.db
+      .query("order_files")
+      .withIndex("by_file_storage_key", (q) => q.eq("file_storage_key", args.old_key))
+      .collect();
+    for (const f of files) {
+      await ctx.db.patch(f._id, { file_storage_key: args.new_key });
+    }
+    return true;
+  },
+});
+

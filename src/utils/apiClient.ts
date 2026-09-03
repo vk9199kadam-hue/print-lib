@@ -1,6 +1,7 @@
 import { User, librarian, Order, Pricing, Submission, FileItem } from '../types';
 import { ConvexReactClient } from 'convex/react';
 import { api } from '../../convex/_generated/api';
+import { uploadBase64ToCloud } from './fileStorage';
 
 const convexUrl = import.meta.env.VITE_CONVEX_URL || 'https://avid-lark-265.convex.cloud';
 const convex = new ConvexReactClient(convexUrl);
@@ -336,10 +337,43 @@ export const ApiClient = {
     cloudOrders.forEach(o => combinedMap.set(o.order_id, o));
 
     // Process local orders: merge and automatically push any missing/updated orders to Convex Cloud
-    localOrders.forEach(lo => {
+    localOrders.forEach(async lo => {
       if (!combinedMap.has(lo.order_id)) {
         combinedMap.set(lo.order_id, lo);
-        // Automatically sync missing local order to Convex Cloud so all devices (phone/other PCs) receive it
+        
+        // Auto-bridge local files to cloud storage so other devices can download them
+        const filesPayload = await Promise.all((lo.files || []).map(async f => {
+          let storageKey = f.file_storage_key || "";
+          if (storageKey.startsWith('local_')) {
+            const cleanK = storageKey.replace('local_', '');
+            const base64 = localStorage.getItem('local_file_' + cleanK) || localStorage.getItem('local_file_' + storageKey);
+            if (base64 && base64.startsWith('data:')) {
+              try {
+                const cloudStorageId = await uploadBase64ToCloud(base64);
+                if (cloudStorageId) {
+                  storageKey = cloudStorageId;
+                  localStorage.setItem('local_file_' + cloudStorageId, base64);
+                }
+              } catch (e) { /* ignore */ }
+            }
+          }
+          return {
+            file_name: f.file_name || "document.pdf",
+            file_storage_key: storageKey,
+            file_type: f.file_type || "pdf",
+            file_extension: f.file_extension || "",
+            page_count: f.page_count ?? 1,
+            print_type: f.print_type || "bw",
+            color_page_ranges: f.color_page_ranges || "",
+            copies: f.copies ?? 1,
+            sides: f.sides || "single",
+            bw_pages: f.bw_pages ?? 0,
+            color_pages: f.color_pages ?? 0,
+            file_price: f.file_price ?? 0,
+            student_note: f.student_note || "",
+          };
+        }));
+
         const orderData: any = {
           order_id: lo.order_id,
           student_id: lo.student_id || "",
@@ -357,21 +391,7 @@ export const ApiClient = {
           print_status: lo.print_status || "queued",
           qr_code: lo.qr_code || "",
           order_type: lo.order_type || "standard",
-          files: (lo.files || []).map(f => ({
-            file_name: f.file_name || "document.pdf",
-            file_storage_key: f.file_storage_key || "",
-            file_type: f.file_type || "pdf",
-            file_extension: f.file_extension || "",
-            page_count: f.page_count ?? 1,
-            print_type: f.print_type || "bw",
-            color_page_ranges: f.color_page_ranges || "",
-            copies: f.copies ?? 1,
-            sides: f.sides || "single",
-            bw_pages: f.bw_pages ?? 0,
-            color_pages: f.color_pages ?? 0,
-            file_price: f.file_price ?? 0,
-            student_note: f.student_note || "",
-          }))
+          files: filesPayload,
         };
         convex.mutation(api.orders.createOrder, orderData).catch(err => {
           console.warn("Auto-sync local order to cloud failed:", lo.order_id, err);
@@ -564,11 +584,7 @@ export const ApiClient = {
   async getFile(key: string): Promise<string | null> {
     if (!key) return null;
 
-    // 1. First check local storage backup for instant access
-    const cleanKey = key.replace('local_', '');
-    const localBackup = localStorage.getItem('local_file_' + cleanKey) || localStorage.getItem('local_file_' + key);
-
-    // 2. Query Convex Cloud if key is a cloud storage ID
+    // 1. If key is a cloud storage ID, query Convex Cloud
     if (!key.startsWith('local_')) {
       try {
         const cloudUrl = await convex.query(api.files.getFileUrl, { storageId: key });
@@ -578,7 +594,29 @@ export const ApiClient = {
       }
     }
 
-    // 3. Fallback to local backup copy
+    // 2. Check local storage backup
+    const cleanKey = key.replace('local_', '');
+    const localBackup = localStorage.getItem('local_file_' + cleanKey) || localStorage.getItem('local_file_' + key);
+
+    // 3. If local backup copy exists, bridge it to cloud storage in the background so other devices can access it!
+    if (localBackup && localBackup.startsWith('data:')) {
+      uploadBase64ToCloud(localBackup).then(async (cloudStorageId) => {
+        if (cloudStorageId) {
+          try {
+            await convex.mutation(api.orders.updateFileStorageKey, {
+              old_key: key,
+              new_key: cloudStorageId,
+            });
+            localStorage.setItem('local_file_' + cloudStorageId, localBackup);
+          } catch (e) {
+            console.warn("Auto-bridge local file to cloud failed:", e);
+          }
+        }
+      }).catch(() => {});
+
+      return localBackup;
+    }
+
     return localBackup || null;
   },
 

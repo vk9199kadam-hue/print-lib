@@ -5,49 +5,79 @@ const convexUrl = import.meta.env.VITE_CONVEX_URL || 'https://avid-lark-265.conv
 const convex = new ConvexReactClient(convexUrl);
 
 export async function uploadFileToCloud(file: File, key: string): Promise<string> {
-  try {
-    const uploadUrl = await convex.mutation(api.files.generateUploadUrl, {});
-    const response = await fetch(uploadUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': file.type || 'application/octet-stream' },
-      body: file,
-    });
+  const contentType = file.type && file.type.trim() !== '' ? file.type : 'application/pdf';
 
-    if (!response.ok) {
-      throw new Error('Cloud upload failed: ' + response.statusText);
-    }
-
-    const { storageId } = await response.json();
-
-    // Cache local backup copy so file is guaranteed downloadable in any network condition
+  // Attempt upload to Convex Cloud Storage with retry
+  for (let attempt = 1; attempt <= 2; attempt++) {
     try {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (reader.result) {
-          try {
-            localStorage.setItem('local_file_' + storageId, reader.result as string);
-            localStorage.setItem('local_file_' + key, reader.result as string);
-          } catch (e) { /* ignore storage quota limit */ }
-        }
-      };
-      reader.readAsDataURL(file);
-    } catch (e) { /* ignore */ }
+      const uploadUrl = await convex.mutation(api.files.generateUploadUrl, {});
+      const response = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': contentType },
+        body: file,
+      });
 
-    return storageId;
-  } catch (err) {
-    console.warn("Cloud upload failed or offline, creating resilient local storage key fallback:", err);
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result as string;
+      if (!response.ok) {
+        throw new Error('Cloud upload failed: ' + response.statusText);
+      }
+
+      const { storageId } = await response.json();
+      if (storageId) {
+        // Cache local backup copy so file is instantly previewable
         try {
-          localStorage.setItem('local_file_' + key, base64);
-        } catch (e) { /* ignore quota limits */ }
-        resolve('local_' + key);
-      };
-      reader.onerror = () => resolve('local_' + key);
-      reader.readAsDataURL(file);
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            if (reader.result) {
+              try {
+                localStorage.setItem('local_file_' + storageId, reader.result as string);
+                localStorage.setItem('local_file_' + key, reader.result as string);
+              } catch (e) { /* ignore storage quota limit */ }
+            }
+          };
+          reader.readAsDataURL(file);
+        } catch (e) { /* ignore */ }
+
+        return storageId;
+      }
+    } catch (err) {
+      console.warn(`Cloud upload attempt ${attempt} failed:`, err);
+      if (attempt === 1) {
+        await new Promise((r) => setTimeout(r, 600));
+      }
+    }
+  }
+
+  // Fallback to local storage if offline or network error
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      try {
+        localStorage.setItem('local_file_' + key, base64);
+      } catch (e) { /* ignore quota limits */ }
+      resolve('local_' + key);
+    };
+    reader.onerror = () => resolve('local_' + key);
+    reader.readAsDataURL(file);
+  });
+}
+
+export async function uploadBase64ToCloud(base64Data: string): Promise<string | null> {
+  try {
+    const res = await fetch(base64Data);
+    const blob = await res.blob();
+    const uploadUrl = await convex.mutation(api.files.generateUploadUrl, {});
+    const uploadRes = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': blob.type || 'application/pdf' },
+      body: blob,
     });
+    if (!uploadRes.ok) return null;
+    const { storageId } = await uploadRes.json();
+    return storageId || null;
+  } catch (err) {
+    console.warn("uploadBase64ToCloud failed:", err);
+    return null;
   }
 }
 
