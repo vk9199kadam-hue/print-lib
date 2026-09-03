@@ -197,15 +197,12 @@ export default function StudentDashboard() {
       const qr = await generateQR(tempId);
 
       const filesWithPrices = uploadedFiles.map(f => {
-        const isColor = f.print_type === 'color';
-        const bwPgs = isColor ? 0 : (f.page_count || 1);
-        const colPgs = isColor ? (f.page_count || 1) : 0;
-        const itemPrice = calcFilePrice(f, pricing);
+        const calc = calcFilePrice(f, pricing);
         return { 
           ...f, 
-          bw_pages: bwPgs, 
-          color_pages: colPgs, 
-          file_price: itemPrice 
+          bw_pages: calc.bw_pages, 
+          color_pages: calc.color_pages, 
+          file_price: calc.file_price 
         };
       });
 
