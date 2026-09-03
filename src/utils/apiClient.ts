@@ -130,9 +130,9 @@ export const ApiClient = {
         color_page_ranges: f.color_page_ranges || "",
         copies: f.copies ?? 1,
         sides: f.sides || "single",
-        bw_pages: f.bw_pages ?? 0,
-        color_pages: f.color_pages ?? 0,
-        file_price: f.file_price ?? 0,
+        bw_pages: typeof f.bw_pages === 'number' ? f.bw_pages : (Number(f.bw_pages) || 0),
+        color_pages: typeof f.color_pages === 'number' ? f.color_pages : (Number(f.color_pages) || 0),
+        file_price: typeof f.file_price === 'number' ? f.file_price : (typeof f.file_price === 'object' && f.file_price !== null ? (Number((f.file_price as any).file_price) || 0) : (Number(f.file_price) || 0)),
         student_note: f.student_note || "",
       }))
     };
